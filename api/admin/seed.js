@@ -12,7 +12,11 @@ export default async function handler(req, res) {
     if (!name || !emailOk(email)) return res.status(400).json({ error: `bad row: ${email || name}` });
     if (seen.has(email)) continue;
     seen.add(email);
-    clean.push({ name, email, quota: Math.min(10, Math.max(0, parseInt(r.quota) || 3)), token: newToken() });
+    const places = (n, fallback) => {
+      const v = parseInt(n, 10);
+      return Math.min(10, Math.max(0, Number.isFinite(v) ? v : fallback));
+    };
+    clean.push({ name, email, quota: places(r.quota, 3), child_quota: places(r.child_quota, 3), token: newToken() });
   }
   const payload = clean.map(({ token, ...r }, i) => ({ ...r, token_hash: hash(clean[i].token) }));
   const { data, error } = await db.rpc('seed_invites', { p_rows: payload });

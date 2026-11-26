@@ -7,9 +7,12 @@ create table if not exists invites (
   status text not null default 'invited' check (status in ('invited','confirmed','revoked')),
   level int not null default 1,
   quota int not null default 3,
+  child_quota int not null default 3,
   token_hash text not null unique,
   created_at timestamptz not null default now()
 );
+alter table invites add column if not exists child_quota int not null default 3;
+
 create unique index if not exists invites_email_active on invites (lower(email)) where status <> 'revoked';
 create index if not exists invites_parent on invites (parent_id);
 
@@ -31,8 +34,8 @@ begin
   select count(*) into total from invites where status <> 'revoked';
   if total + n > 1400 then raise exception 'the guest list is full.'; end if;
   return query
-    insert into invites (parent_id, name, email, level, quota, token_hash)
-    select me.id, g->>'name', lower(g->>'email'), me.level + 1, 3, g->>'token_hash'
+    insert into invites (parent_id, name, email, level, quota, child_quota, token_hash)
+    select me.id, g->>'name', lower(g->>'email'), me.level + 1, me.child_quota, 0, g->>'token_hash'
     from jsonb_array_elements(p_guests) g
     returning *;
 end $$;
@@ -46,8 +49,8 @@ begin
   select count(*) into total from invites where status <> 'revoked';
   if total + n > 1400 then raise exception 'that would go over the capacity of 1400.'; end if;
   return query
-    insert into invites (name, email, level, quota, token_hash)
-    select r->>'name', lower(r->>'email'), 1, coalesce((r->>'quota')::int, 3), r->>'token_hash'
+    insert into invites (name, email, level, quota, child_quota, token_hash)
+    select r->>'name', lower(r->>'email'), 1, coalesce((r->>'quota')::int, 3), coalesce((r->>'child_quota')::int, 3), r->>'token_hash'
     from jsonb_array_elements(p_rows) r
     on conflict (lower(email)) where status <> 'revoked' do nothing
     returning *;

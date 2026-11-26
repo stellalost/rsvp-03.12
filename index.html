@@ -65,14 +65,15 @@ input:focus,textarea:focus,button:focus-visible,a:focus-visible{outline:2px soli
 const MOCK = location.protocol === 'file:' || location.search.includes('mock');
 const CAPACITY = 1400;
 const MAX_LEVEL = 3;          // level 1 = first wave, level 3 can't add guests
-const DEFAULT_QUOTA = 3;      // per person, adding guests is optional
+const DEFAULT_QUOTA = 3;      // how many guests a first-wave person can add
+const DEFAULT_CHILD_QUOTA = 3; // how many guests each of those people can add
 
 /* ---------- mock backend (in memory, resets on refresh) ---------- */
 const db = [
-  {id:1,parent:null,name:'alex',email:'alex@example.com',phone:'07700 900111',status:'confirmed',level:1,quota:3,token:'demo'},
-  {id:2,parent:1,name:'sam',email:'sam@example.com',phone:'07700 900222',status:'confirmed',level:2,quota:3,token:'demo2'},
-  {id:3,parent:2,name:'jo',email:'jo@example.com',phone:'',status:'invited',level:3,quota:0,token:'demo3'},
-  {id:4,parent:1,name:'riley',email:'riley@example.com',phone:'',status:'invited',level:2,quota:3,token:'t4'}
+  {id:1,parent:null,name:'alex',email:'alex@example.com',phone:'07700 900111',status:'confirmed',level:1,quota:3,child_quota:1,token:'demo'},
+  {id:2,parent:1,name:'sam',email:'sam@example.com',phone:'07700 900222',status:'confirmed',level:2,quota:1,child_quota:0,token:'demo2'},
+  {id:3,parent:2,name:'jo',email:'jo@example.com',phone:'',status:'invited',level:3,quota:0,child_quota:0,token:'demo3'},
+  {id:4,parent:1,name:'riley',email:'riley@example.com',phone:'',status:'invited',level:2,quota:1,child_quota:0,token:'t4'}
 ];
 let nextId = 10;
 const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -108,15 +109,15 @@ const mockApi = {
       if(db.some(d => d.email.toLowerCase() === g.email.toLowerCase() && d.status !== 'revoked'))
         throw new Error(g.email + ' is already on the list.');
     }
-    guests.forEach(g => db.push({id:nextId++,parent:me.id,name:g.name,email:g.email,phone:'',status:'invited',level:me.level+1,quota:DEFAULT_QUOTA,token:'t'+nextId}));
+    guests.forEach(g => db.push({id:nextId++,parent:me.id,name:g.name,email:g.email,phone:'',status:'invited',level:me.level+1,quota:me.child_quota || 0,child_quota:0,token:'t'+nextId}));
   },
   // GET /api/admin/list   (behind admin auth)
   async adminList(){ await wait(150); return {rows: db.map(d => ({...d})), count: active().length}; },
-  // POST /api/admin/seed  {rows:[{name,email,quota}]}
+  // POST /api/admin/seed  {rows:[{name,email,quota,child_quota}]}
   async adminSeed(rows){
     await wait(300);
-    rows.forEach(r => { if(!db.some(d => d.email === r.email && d.status !== 'revoked'))
-      db.push({id:nextId++,parent:null,name:r.name,email:r.email,phone:'',status:'invited',level:1,quota:r.quota,token:'t'+nextId}); });
+    rows.forEach(r => { if(!db.some(d => d.email.toLowerCase() === r.email.toLowerCase() && d.status !== 'revoked'))
+      db.push({id:nextId++,parent:null,name:r.name,email:r.email,phone:'',status:'invited',level:1,quota:r.quota,child_quota:r.child_quota,token:'t'+nextId}); });
   },
   // POST /api/admin/revoke  {id}   revokes the person and their whole branch
   async adminRevoke(id){
@@ -178,7 +179,7 @@ async function guestView(token){
 
     ${canAdd ? `
     <h2>your guests</h2>
-    <p class="dim">adding guests is optional. you can add ${me.quota} in total${confirmed ? '' : ' once you have confirmed'}. each guest gets their own link and can add guests of their own.</p>
+    <p class="dim">adding guests is optional. you can add ${me.quota} ${me.quota === 1 ? 'guest' : 'guests'} in total${confirmed ? '' : ' once you have confirmed'}. ${me.level + 1 < MAX_LEVEL && me.child_quota > 0 ? `each of them can add ${me.child_quota === 1 ? '1 guest' : me.child_quota + ' guests'}.` : `they can't add guests of their own.`}</p>
     ${children.length ? `<div class="list">${children.map(c => `<div class="item"><span>${esc(c.name)} <span class="dim">${esc(c.email)}</span></span><span>${c.status}</span></div>`).join('')}</div>` : ''}
     ${confirmed && remaining > 0 ? `
       <div id="rows"></div>
@@ -231,7 +232,7 @@ async function adminView(){
   const render = pid => (byParent[pid] || []).map(r => `
     <li>
       <div class="node ${r.status}">
-        <span>${esc(r.name)} <span class="dim">${esc(r.email)} · ${r.phone ? esc(r.phone) : 'no phone'} · ${r.status}</span></span>
+        <span>${esc(r.name)} <span class="dim">${esc(r.email)} · ${r.phone ? esc(r.phone) : 'no phone'} · ${r.status}${r.level < MAX_LEVEL ? ` · can invite ${r.quota}${r.level + 1 < MAX_LEVEL ? `, their guests can invite ${r.child_quota}` : ''}` : ''}</span></span>
         ${r.status !== 'revoked' ? `<button class="btn ghost" data-rv="${r.id}">revoke</button>` : ''}
       </div>
       ${byParent[r.id] ? `<ul>${render(r.id)}</ul>` : ''}
@@ -241,23 +242,48 @@ async function adminView(){
   app.innerHTML = `
     <p class="sub">guest list admin</p>
     <p>${count} / ${CAPACITY} places used <span class="dim">(${confirmed} confirmed)</span></p>
+    <p><button class="btn ghost" id="dl">download invited and confirmed</button></p>
     <div class="bar"><i style="width:${Math.min(100, count / CAPACITY * 100)}%"></i></div>
     <div id="flash"></div>
 
     <h2>add first wave</h2>
-    <p class="dim">one per line: name, email, guests allowed (optional, default ${DEFAULT_QUOTA}).</p>
-    <div class="field"><textarea id="seed" rows="5" placeholder="alex, alex@example.com, 3"></textarea></div>
+    <p class="dim">one per line: name, email, how many they can invite, how many each of those guests can invite.</p>
+    <div class="field"><textarea id="seed" rows="5" placeholder="stella, stellaam@live.com, 3, 1"></textarea></div>
     <p class="right"><button class="btn" id="go">send links</button></p>
 
     <h2>guest tree</h2>
     <ul class="tree">${render('root')}</ul>`;
 
+  const places = (v, fallback) => {
+    if(v === undefined || v === '') return fallback;
+    const n = parseInt(v, 10);
+    return Number.isFinite(n) && n >= 0 && n <= 10 ? n : null;
+  };
+  $('#dl').onclick = () => {
+    const byId = Object.fromEntries(rows.map(r => [r.id, r]));
+    const cell = v => { const s = String(v ?? ''); return /[",\n]/.test(s) ? `"${s.replaceAll('"', '""')}"` : s; };
+    const people = rows.filter(r => r.status === 'invited' || r.status === 'confirmed');
+    const lines = [['name','email','phone','status','invited by','can invite','their guests can invite'],
+      ...people.map(r => [r.name, r.email, r.phone || '', r.status, r.parent ? (byId[r.parent]?.name || '') : 'us', r.quota, r.child_quota])];
+    const blob = new Blob([lines.map(line => line.map(cell).join(',')).join('\n')], {type:'text/csv'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'lost-guests.csv';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  };
   $('#go').onclick = async () => {
     const parsed = $('#seed').value.split('\n').map(l => l.split(',').map(x => x.trim())).filter(p => p[0] || p[1]);
     if(!parsed.length || parsed.some(p => !p[0] || !/^\S+@\S+\.\S+$/.test(p[1] || ''))){
       $('#flash').innerHTML = notice('each line needs a name and a valid email.', true); return; }
-    await api.adminSeed(parsed.map(p => ({name:p[0], email:p[1], quota: parseInt(p[2]) || DEFAULT_QUOTA})));
-    adminView();
+    const seeded = [];
+    for(const p of parsed){
+      const quota = places(p[2], DEFAULT_QUOTA), child = places(p[3], DEFAULT_CHILD_QUOTA);
+      if(quota === null || child === null){ $('#flash').innerHTML = notice('guest numbers must be from 0 to 10.', true); return; }
+      seeded.push({name:p[0], email:p[1], quota, child_quota: child});
+    }
+    try { await api.adminSeed(seeded); adminView(); }
+    catch(e){ $('#flash').innerHTML = notice(e.message, true); }
   };
   app.querySelectorAll('[data-rv]').forEach(b => b.onclick = async () => {
     if(confirm('revoke this person and everyone they invited?')){ await api.adminRevoke(+b.dataset.rv); adminView(); }
