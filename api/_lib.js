@@ -25,11 +25,9 @@ export function guard(req, res, method, admin = false) {
   return true;
 }
 
-function message({ to, name, token, invitedBy }) {
+function message({ to, name, token, invitedBy = 'we' }) {
   const link = `${process.env.SITE_URL}/#token=${token}`;
-  const intro = invitedBy
-    ? `${invitedBy} added you to the list for the opening of lost.`
-    : `you're on the list for the opening of lost.`;
+  const intro = `${invitedBy} added you to the list for the opening of lost.`;
   return {
     from: process.env.MAIL_FROM,
     to,

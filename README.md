@@ -1,6 +1,6 @@
 # lost guest list
 
-invite-tree rsvp for circus (18.12.26 & 19.12.26). capacity 1400, three levels, max 3 guests each by default.
+invite-tree rsvp for the opening of lost (03.12.26). capacity 1400, three levels, max 3 guests each by default.
 
 ## stack
 - frontend: index.html (static, vercel)

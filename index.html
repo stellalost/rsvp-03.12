@@ -159,15 +159,15 @@ async function guestView(token){
   app.innerHTML = '<p class="sub dim">loading...</p>';
   let data;
   try { data = await api.getInvite(token); }
-  catch(e){ app.innerHTML = `<p class="sub">circus</p>${notice(e.message, true)}<p class="dim">if you think this is a mistake, reply to the email you received.</p>`; return; }
+  catch(e){ app.innerHTML = `<p class="sub">lost</p>${notice(e.message, true)}<p class="dim">if you think this is a mistake, reply to the email you received.</p>`; return; }
   const {me, children, remaining} = data;
   const confirmed = me.status === 'confirmed';
   const canAdd = me.level < MAX_LEVEL;
 
   app.innerHTML = `
-    <p class="sub">circus</p>
+    <p class="sub">lost</p>
     <p>hi ${esc(me.name)},</p>
-    <p>${confirmed ? 'you\'re confirmed for 18.12.26 &amp; 19.12.26.' : 'confirm your details to secure your place on 18.12.26 &amp; 19.12.26.'}</p>
+    <p>${confirmed ? 'you\'re confirmed for 03.12.26.' : 'confirm your details to secure your place on 03.12.26.'}</p>
     <div id="flash"></div>
 
     <h2>your details</h2>
