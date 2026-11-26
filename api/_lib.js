@@ -28,13 +28,13 @@ export function guard(req, res, method, admin = false) {
 function message({ to, name, token, invitedBy }) {
   const link = `${process.env.SITE_URL}/#token=${token}`;
   const intro = invitedBy
-    ? `${invitedBy} added you to the list for circus.`
-    : `you're on the list for circus.`;
+    ? `${invitedBy} added you to the list for the opening of lost.`
+    : `you're on the list for the opening of lost.`;
   return {
     from: process.env.MAIL_FROM,
     to,
     subject: 'lost',
-    text: `hi ${name},\n\n${intro}\n\n18.12.26 & 19.12.26\n\nconfirm your details and add your guests here:\n${link}\n\nthis link is personal to you. please don't share it.\n\nsee you soon.\n\nlost\n\n*subject to licence*`
+    text: `hi ${name},\n\n${intro}\n\n03.12.26\n\nconfirm your details and add your guests here:\n${link}\n\nthis link is personal to you. please don't share it.\n\nsee you soon.\n\nlost\n\n*subject to licence*`
   };
 }
 
