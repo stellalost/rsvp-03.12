@@ -29,7 +29,7 @@ export function guard(req, res, method, admin = false) {
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const queueLine = (v) => ({ standard: 'please join the general admission queue', vip: 'please join the VIP queue', vvip: 'please join the VVIP queue' }[(v || 'standard').toLowerCase()] || 'please join the general admission queue');
 
-const layout = (inner) => `<body style="margin:0;padding:0;background:#000;">
+const layout = (inner) => `<html><head><meta name="format-detection" content="address=no,telephone=no"></head><body style="margin:0;padding:0;background:#000;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#000000" style="background:#000;color:#fff;font-family:'Courier New',Courier,monospace;font-size:13px;line-height:1.2;">
 <tr><td align="center" bgcolor="#000000" style="padding:96px 28px 120px;text-align:center;">
 <table role="presentation" align="center" width="280" cellpadding="0" cellspacing="0" style="width:280px;max-width:280px;margin:0 auto;">
@@ -39,13 +39,14 @@ ${inner}
 </table>
 </td></tr>
 </table>
-</body>`;
-const para = (html, last = false) => `<p align="center" style="margin:${last ? '40px 0 0' : '0 0 22px'};text-align:center;line-height:1.2;">${html}</p>`;
-const urlText = (link) => {
-  const safe = esc(link).replace('https://', 'https://&#8203;');
-  const at = safe.indexOf('/#');
-  const shown = at === -1 ? safe : `${safe.slice(0, at + 1)}<br>${safe.slice(at + 1)}`;
-  return `<span style="color:#fff;text-decoration:none;">${shown}</span>`;
+</body></html>`;
+const para = (html, last = false, top) => {
+  const marginTop = top ?? (last ? 40 : 0);
+  return `<p align="center" style="margin:${marginTop}px 0 ${last ? 0 : 22}px;text-align:center;line-height:1.2;">${html}</p>`;
+};
+const urlLink = (link) => {
+  const safe = esc(link);
+  return `<a href="${safe}" style="color:#fff;text-decoration:underline;">${safe}</a>`;
 };
 
 function applyMessage({ to, name, token }) {
@@ -64,7 +65,8 @@ function applyMessage({ to, name, token }) {
       para('entry is free of charge'),
       para('if successful you will be part of the first group of people to see the space'),
       para('the first to dance'),
-      para(`please fill in the form attached by 02.12 at 12pm<br>${urlText(link)}`),
+      para('please fill in the form attached by 02.12 at 12pm'),
+      para(urlLink(link), false, 36),
       para('this link is personal to you. please do not share.'),
       para('lost', true)
     ].join('\n'))
@@ -102,9 +104,10 @@ function inviteMessage({ to, name, token, access }) {
       para('your place at lost preview night 03.12 has been confirmed'),
       para('9pm - 3am'),
       para('Last entry 1am'),
-      para('20 john princes street<br>london<br>W1G 0BJ'),
+      para('20&#8203; john princes street<br>london<br>W1G&#8203; 0BJ'),
       para(esc(queue)),
-      para(`confirm your details and add your guests here:<br>${urlText(link)}`),
+      para('confirm your details and add your guests here:'),
+      para(urlLink(link), false, 36),
       para('this link is personal to you. please do not share.'),
       para('we missed you.'),
       para('see you soon.'),
