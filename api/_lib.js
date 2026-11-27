@@ -67,13 +67,13 @@ function ackMessage({ to, name }) {
     from: process.env.MAIL_FROM,
     to,
     subject: 'lost',
-    text: `hi ${name}\n\nwe have received your request for lost preview night\n\n03.12\n\nyou have been added to the waitlist\n\nif your place is confirmed you will receive a confirmation\n\nlost`,
+    text: `hi ${name}\n\nwe have received your request for lost preview night\n\n03.12.26\n\nyou have been added to the waitlist\n\nif your place is successful you will receive a confirmation\n\nlost`,
     html: layout([
       para(`hi ${esc(name)}`),
       para('we have received your request for lost preview night'),
-      para('03.12'),
+      para('03.12.26'),
       para('you have been added to the waitlist'),
-      para('if your place is confirmed you will receive a confirmation'),
+      para('if your place is successful you will receive a confirmation'),
       para('lost', true)
     ].join('\n'))
   };

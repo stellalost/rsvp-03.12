@@ -209,13 +209,15 @@ async function guestView(token){
       app.innerHTML = `
         <p class="sub">lost</p>
         <p>hi ${esc(me.name)},</p>
-        <p>thanks. we have received your request and will get back to you.</p>`;
+        <p>thanks. we have received your request for lost preview night.</p>
+        <p>03.12.26</p>
+        <p>you have been added to the waitlist.</p>`;
       return;
     }
     app.innerHTML = `
       <p class="sub">lost</p>
       <p>hi ${esc(me.name)},</p>
-      <p>you have been chosen to apply to attend.</p>
+      <p>you have been chosen to apply to the lost preview night.</p>
       <p>03.12.26</p>
       <div id="flash"></div>
       <h2>your name</h2>
