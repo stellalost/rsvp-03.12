@@ -4,7 +4,7 @@ export default async function handler(req, res) {
   if (!guard(req, res, 'POST')) return;
   const token = bearer(req);
   const guests = req.body?.guests;
-  if (!token || !Array.isArray(guests) || guests.length < 1 || guests.length > 1400) return res.status(400).json({ error: 'that is more guests than you have left.' });
+  if (!token || !Array.isArray(guests) || guests.length < 1 || guests.length > 3000) return res.status(400).json({ error: 'that is more guests than you have left.' });
   const clean = guests.map((g) => ({ name: String(g.name || '').trim().slice(0, 100), email: String(g.email || '').trim().toLowerCase() }));
   if (clean.some((g) => !g.name || !emailOk(g.email))) return res.status(400).json({ error: 'each guest needs a name and a valid email.' });
   if (new Set(clean.map((g) => g.email)).size !== clean.length) return res.status(400).json({ error: 'you entered the same email twice.' });

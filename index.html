@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>lost</title>
+<title>lost opening night </title>
 <link rel="icon" href="favicon.png" type="image/png">
 <style>
 :root{--bg:#000;--fg:#fff;--dim:#777;--line:#fff}
@@ -67,16 +67,16 @@ input:focus,textarea:focus,button:focus-visible,a:focus-visible{outline:2px soli
    vercel /api routes (see the fetch comments in each method).
 ---------------------------------------------------------------- */
 const MOCK = location.protocol === 'file:' || location.search.includes('mock');
-const CAPACITY = 1400;
+const CAPACITY = 3000;
 const MAX_LEVEL = 3;          // level 1 = first wave, level 3 can't add guests
 const DEFAULT_QUOTA = 3;      // how many guests a first-wave person can add
 const DEFAULT_CHILD_QUOTA = 3; // how many guests each of those people can add
-const ACCESS = ['standard','vip','vvip'];
-const accessLabel = v => ({standard:'standard', vip:'VIP', vvip:'VVIP'}[(v || 'standard').toLowerCase()] || 'standard');
+const ACCESS_CODE = {a:'vvip', vvip:'vvip', b:'vip', vip:'vip', c:'standard', standard:'standard'};
+const accessLabel = v => ({vvip:'a', vip:'b', standard:'c'}[(v || 'standard').toLowerCase()] || 'c');
 const accessOf = (v, fallback = 'standard') => {
   if(v === undefined || v === '') return fallback;
   const n = String(v).trim().toLowerCase().replace(/\s+access$/, '');
-  return ACCESS.includes(n) ? n : null;
+  return ACCESS_CODE[n] || null;
 };
 
 /* ---------- mock backend (in memory, resets on refresh) ---------- */
@@ -155,7 +155,7 @@ const mockApi = {
     await wait(300);
     const fresh = rows.filter(r => !db.some(d => d.email.toLowerCase() === r.email.toLowerCase() && d.status !== 'revoked'));
     if(reservedPlaces(db) + fresh.reduce((n, r) => n + treeSize(r.quota, r.child_quota), 0) > CAPACITY)
-      throw new Error('that would go over the capacity of 1400.');
+      throw new Error('that would go over the capacity of 3000.');
     fresh.forEach(r => db.push({id:nextId++,parent:null,name:r.name,email:r.email,phone:'',status:'invited',level:1,quota:r.quota,child_quota:r.child_quota,access:r.access,child_access:r.access,token:'t'+nextId}));
   },
   async adminClear(){ await wait(150); db.splice(0, db.length); },
@@ -240,7 +240,6 @@ async function guestView(token){
   app.innerHTML = `
     <p class="sub">lost</p>
     <p>hi ${esc(me.name)},</p>
-    <p>you are ${accessLabel(me.access)}.</p>
     <p>${confirmed ? 'you\'re confirmed for 03.12.26.' : 'confirm your details to secure your place on 03.12.26.'}</p>
     <div id="flash"></div>
 
@@ -319,8 +318,8 @@ async function adminView(){
     <div id="flash"></div>
 
     <h2>add first wave</h2>
-    <p class="dim">one per line: name, email, how many this person can add, how many each of those guests can add, access. access is standard, vip or vvip, and the people they add get the same. 0 means they can't add anyone. the first email asks them to apply. one minute after they confirm their name, they get the guest list link.</p>
-    <div class="field"><textarea id="seed" rows="5" placeholder="stella, stella@gmail.com, 3, 1, vip"></textarea></div>
+    <p class="dim">one per line: name, email, how many this person can add, how many each of those guests can add, access. access is a, b or c. a is vvip, b is vip, c is standard. the people they add get the same. 0 means they can't add anyone. the first email asks them to apply. one minute after they confirm their name, they get the guest list link.</p>
+    <div class="field"><textarea id="seed" rows="5" placeholder="stella, stella@gmail.com, 3, 1, a"></textarea></div>
     <p class="right"><button class="btn" id="go">send links</button></p>
 
     <h2>guest tree</h2>
@@ -353,7 +352,7 @@ async function adminView(){
       const quota = places(p[2], DEFAULT_QUOTA), child = places(p[3], DEFAULT_CHILD_QUOTA);
       const tier = accessOf(p[4]);
       if(quota === null || child === null){ $('#flash').innerHTML = notice('guest numbers must be from 0 to ' + CAPACITY + '.', true); return; }
-      if(tier === null){ $('#flash').innerHTML = notice('access must be standard, vip or vvip.', true); return; }
+      if(tier === null){ $('#flash').innerHTML = notice('access must be a, b or c.', true); return; }
       seeded.push({name:p[0], email:p[1], quota, child_quota: child, access: tier, child_access: tier});
     }
     try { await api.adminSeed(seeded); adminView(); }

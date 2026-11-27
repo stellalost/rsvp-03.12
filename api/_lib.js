@@ -27,15 +27,12 @@ export function guard(req, res, method, admin = false) {
 }
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const queueLine = (v) => ({ standard: 'please join the general admission queue', vip: 'please join the VIP queue', vvip: 'please join the VVIP queue' }[(v || 'standard').toLowerCase()] || 'please join the general admission queue');
-
 const layout = (inner) => `<html><head><meta name="format-detection" content="address=no,telephone=no"></head><body style="margin:0;padding:0;background:#000;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#000000" style="background:#000;color:#fff;font-family:'Courier New',Courier,monospace;font-size:13px;line-height:1.2;">
 <tr><td align="center" bgcolor="#000000" style="padding:96px 28px 120px;text-align:center;">
 <table role="presentation" align="center" width="280" cellpadding="0" cellspacing="0" style="width:280px;max-width:280px;margin:0 auto;">
 <tr><td align="center" style="text-align:center;font-family:'Courier New',Courier,monospace;font-size:13px;line-height:1.2;color:#fff;">
 ${inner}
-<div style="display:none;max-height:0;overflow:hidden;">${Date.now()}-${Math.random().toString(36).slice(2)}</div>
 </td></tr>
 </table>
 </td></tr>
@@ -49,6 +46,10 @@ const linkText = (link, label) => {
   const safe = esc(link);
   return `<a href="${safe}" style="color:#ffffff;text-decoration:underline;"><font color="#ffffff">${esc(label)}</font></a>`;
 };
+const button = (link, label) => {
+  const safe = esc(link);
+  return `<table role="presentation" align="center" cellpadding="0" cellspacing="0" style="margin:36px auto 22px;"><tr><td align="center" bgcolor="#000000" style="border:1px solid #ffffff;background:#000000;"><a href="${safe}" style="display:inline-block;padding:10px 22px;font-family:'Courier New',Courier,monospace;font-size:13px;line-height:1.2;color:#ffffff;text-decoration:none;background:#000000;border:1px solid #ffffff;"><font color="#ffffff">${esc(label)}</font></a></td></tr></table>`;
+};
 
 function applyMessage({ to, name, token }) {
   const link = `${process.env.SITE_URL}/#token=${token}`;
@@ -56,19 +57,14 @@ function applyMessage({ to, name, token }) {
   return {
     from: process.env.MAIL_FROM,
     to,
-    subject: 'lost',
-    text: `hi ${name}\n\nyou are invited to request access to the lost preview night\n\n03.12\n\nthis is an invite only night\n\nentry is free of charge\n\nif successful you will be part of the first group of people to see the space\n\nthe first to dance\n\nplease fill in the form attached by 02.12 at 12pm\n${link}\n\nthis link is personal to you. please do not share.\n\nlost`,
+    subject: 'lost preview night',
+    text: `hi ${name}\n\nyou are invited to the lost preview night on 03.12\n\nplease fill in the form attached by 02.12 at 12pm\n\nenter\n${link}\n\nyou will be the first to enter\n\nlost`,
     html: layout([
       para(`hi ${safeName}`),
-      para('you are invited to request access to the lost preview night'),
-      para('03.12'),
-      para('this is an invite only night'),
-      para('entry is free of charge'),
-      para('if successful you will be part of the first group of people to see the space'),
-      para('the first to dance'),
+      para('you are invited to the lost preview night on 03.12'),
       para('please fill in the form attached by 02.12 at 12pm'),
-      para(linkText(link, 'request access'), false, 36),
-      para('this link is personal to you. please do not share.'),
+      button(link, 'enter'),
+      para('you will be the first to enter'),
       para('lost', true)
     ].join('\n'))
   };
@@ -78,14 +74,13 @@ function ackMessage({ to, name }) {
   return {
     from: process.env.MAIL_FROM,
     to,
-    subject: 'lost',
-    text: `hi ${name}\n\nwe have received your request for lost preview night\n\n03.12.26\n\nyou have been added to the waitlist\n\nif your place is successful you will receive a confirmation\n\nlost`,
+    subject: 'lost request',
+    text: `hi ${name}\n\nwe have received your reply for lost preview night\n\nyou will be notified shortly with next steps\n\n03.12\n\nlost`,
     html: layout([
       para(`hi ${esc(name)}`),
-      para('we have received your request for lost preview night'),
-      para('03.12.26'),
-      para('you have been added to the waitlist'),
-      para('if your place is successful you will receive a confirmation'),
+      para('we have received your reply for lost preview night'),
+      para('you will be notified shortly with next steps'),
+      para('03.12'),
       para('lost', true)
     ].join('\n'))
   };
@@ -94,26 +89,48 @@ function ackMessage({ to, name }) {
 function inviteMessage({ to, name, token, access }) {
   const link = `${process.env.SITE_URL}/#token=${token}`;
   const safeName = esc(name);
-  const queue = queueLine(access);
+  const tier = (access || 'standard').toLowerCase();
+  const letter = { vvip: 'A', vip: 'B', standard: 'C' }[tier] || 'C';
+  const confirmed = tier === 'standard'
+    ? 'your place at lost preview night has been confirmed'
+    : 'your place at lost preview night 03.12 has been confirmed';
+  const queue = `please join the ${letter} queue`;
+  const note = 'this evening is designed to help test our systems. prompt arrival is important. you will be the first to enter lost 02. your participation for this evening helps to prepare for opening night.';
+  const address = tier === 'vip';
+  const lines = [
+    `hi ${name}`,
+    '',
+    confirmed,
+    '',
+    '9pm - 3am',
+    '',
+    'last entry 1am',
+    ''
+  ];
+  if (address) lines.push('20 john princes street', 'london', 'W1G 0BJ', '');
+  lines.push(queue, '', `confirm attendance\n${link}`, '', 'we missed you.', '', 'see you soon.', '', 'lost', '', 'note on our preview night:', '', note);
+  const html = [
+    para(`hi ${safeName}`),
+    para(confirmed),
+    para('9pm - 3am'),
+    para('last entry 1am')
+  ];
+  if (address) html.push(para('<a href="" style="text-decoration:none;"><font color="#ffffff">20 john princes street<br>london<br>W1G 0BJ</font></a>'));
+  html.push(
+    para(queue),
+    para(linkText(link, 'confirm attendance'), false, 36),
+    para('we missed you.'),
+    para('see you soon.'),
+    para('lost'),
+    para('note on our preview night:', false, 36),
+    para(note, true)
+  );
   return {
     from: process.env.MAIL_FROM,
     to,
     subject: 'lost opening night',
-    text: `hi ${name}\n\nyour place at lost preview night 03.12 has been confirmed\n\n9pm - 3am\n\nLast entry 1am\n\n20 john princes street\nlondon\nW1G 0BJ\n\n${queue}\n\nconfirm your details and add your guests here:\n${link}\n\nthis link is personal to you. please do not share.\n\nwe missed you.\n\nsee you soon.\n\nlost`,
-    html: layout([
-      para(`hi ${safeName}`),
-      para('your place at lost preview night 03.12 has been confirmed'),
-      para('9pm - 3am'),
-      para('Last entry 1am'),
-      para('<a href="" style="text-decoration:none;"><font color="#ffffff">20 john princes street<br>london<br>W1G 0BJ</font></a>'),
-      para(esc(queue)),
-      para('confirm your details and add your guests here:'),
-      para(linkText(link, 'confirm attendance'), false, 36),
-      para('this link is personal to you. please do not share.'),
-      para('we missed you.'),
-      para('see you soon.'),
-      para('lost', true)
-    ].join('\n'))
+    text: lines.join('\n'),
+    html: layout(html.join('\n'))
   };
 }
 

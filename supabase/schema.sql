@@ -79,7 +79,7 @@ begin
   n := jsonb_array_length(p_guests);
   select count(*) into used from invites where parent_id = me.id and status <> 'revoked';
   if used + n > me.quota then raise exception 'that is more guests than you have left.'; end if;
-  if reserved_places() > 1400 then raise exception 'the guest list is full.'; end if;
+  if reserved_places() > 3000 then raise exception 'the guest list is full.'; end if;
   return query
     insert into invites (parent_id, name, email, level, quota, child_quota, access, child_access, token_hash)
     select me.id, g->>'name', lower(g->>'email'), me.level + 1, me.child_quota, 0, me.access, me.access, g->>'token_hash'
@@ -98,7 +98,7 @@ begin
     + greatest(coalesce((r->>'quota')::int, 3), 0) * greatest(coalesce((r->>'child_quota')::int, 3), 0)
   ), 0) into incoming
   from jsonb_array_elements(p_rows) r;
-  if reserved_places() + incoming > 1400 then raise exception 'that would go over the capacity of 1400.'; end if;
+  if reserved_places() + incoming > 3000 then raise exception 'that would go over the capacity of 3000.'; end if;
   return query
     insert into invites (name, email, level, quota, child_quota, access, child_access, token_hash)
     select r->>'name', lower(r->>'email'), 1, coalesce((r->>'quota')::int, 3), coalesce((r->>'child_quota')::int, 3),

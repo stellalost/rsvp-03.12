@@ -14,15 +14,14 @@ export default async function handler(req, res) {
     seen.add(email);
     const places = (n, fallback) => {
       const v = parseInt(n, 10);
-      return Math.min(1400, Math.max(0, Number.isFinite(v) ? v : fallback));
+      return Math.min(3000, Math.max(0, Number.isFinite(v) ? v : fallback));
     };
     const access = (n) => {
-      const v = String(n || 'standard').trim().toLowerCase().replace(/\s+access$/, '');
-      if (!['standard', 'vip', 'vvip'].includes(v)) return null;
-      return v;
+      const v = String(n || 'c').trim().toLowerCase().replace(/\s+access$/, '');
+      return { a: 'vvip', vvip: 'vvip', b: 'vip', vip: 'vip', c: 'standard', standard: 'standard' }[v] || null;
     };
     const tier = access(r.access);
-    if (!tier) return res.status(400).json({ error: 'access must be standard, vip or vvip.' });
+    if (!tier) return res.status(400).json({ error: 'access must be a, b or c.' });
     clean.push({ name, email, quota: places(r.quota, 3), child_quota: places(r.child_quota, 3), access: tier, child_access: tier, token: newToken() });
   }
   const payload = clean.map(({ token, ...r }, i) => ({ ...r, token_hash: hash(clean[i].token) }));
