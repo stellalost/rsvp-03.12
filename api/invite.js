@@ -11,6 +11,10 @@ export default async function handler(req, res) {
   if (!released) {
     return res.json({ me: { name: me.name, email: me.email, status: me.status }, children: [], remaining: 0, released: false });
   }
+  if (me.status === 'applied') {
+    const { data: saved } = await db.from('invites').update({ status: 'confirmed' }).eq('id', me.id).eq('status', 'applied').select('id');
+    if (saved?.length) me.status = 'confirmed';
+  }
   const { data: children } = await db.from('invites').select('name,email,status,access').eq('parent_id', me.id).neq('status', 'revoked').order('id');
   const canAdd = me.level < 3 && me.status === 'confirmed';
   const remaining = canAdd ? Math.max(0, me.quota - (children?.length || 0)) : 0;

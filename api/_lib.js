@@ -104,21 +104,21 @@ function inviteMessage({ to, name, token, access }) {
     '',
     '9pm - 3am',
     '',
-    'last entry 1am',
+    'last entry 12am',
     ''
   ];
   if (address) lines.push('20 john princes street', 'london', 'W1G 0BJ', '');
-  lines.push(queue, '', `confirm attendance\n${link}`, '', 'we missed you.', '', 'see you soon.', '', 'lost', '', 'note on our preview night:', '', note);
+  lines.push(queue, '', `add your guests\n${link}`, '', 'we missed you.', '', 'see you soon.', '', 'lost', '', 'note on our preview night:', '', note);
   const html = [
     para(`hi ${safeName}`),
     para(confirmed),
     para('9pm - 3am'),
-    para('last entry 1am')
+    para('last entry 12am')
   ];
   if (address) html.push(para('<a href="" style="text-decoration:none;"><font color="#ffffff">20 john princes street<br>london<br>W1G 0BJ</font></a>'));
   html.push(
     para(queue),
-    para(linkText(link, 'confirm attendance'), false, 36),
+    para(linkText(link, 'add your guests'), false, 36),
     para('we missed you.'),
     para('see you soon.'),
     para('lost'),

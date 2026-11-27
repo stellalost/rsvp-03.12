@@ -113,6 +113,7 @@ const mockApi = {
     if(!me) throw new Error('this link is not valid or has been cancelled.');
     const released = me.status === 'confirmed' || (me.status === 'applied' && me.release_at && new Date(me.release_at) <= new Date());
     if(!released) return {me:{name:me.name, email:me.email, status:me.status}, children:[], remaining:0, released:false};
+    if(me.status === 'applied') me.status = 'confirmed';
     const children = kids(me.id).filter(c => c.status !== 'revoked');
     const canAdd = me.level < MAX_LEVEL && me.status === 'confirmed';
     return {me, children, remaining: canAdd ? Math.max(0, me.quota - children.length) : 0, released:true, capacityLeft: CAPACITY - reservedPlaces(db)};
@@ -209,15 +210,15 @@ async function guestView(token){
       app.innerHTML = `
         <p class="sub">lost</p>
         <p>hi ${esc(me.name)},</p>
-        <p>thanks. we have received your request for lost preview night.</p>
+        <p>we have received your reply.</p>
         <p>03.12.26</p>
-        <p>you have been added to the waitlist.</p>`;
+        <p>you will be notified shortly with next steps.</p>`;
       return;
     }
     app.innerHTML = `
       <p class="sub">lost</p>
       <p>hi ${esc(me.name)},</p>
-      <p>you have been chosen to apply to the lost preview night.</p>
+      <p>you have been invited to the lost preview night.</p>
       <p>03.12.26</p>
       <div id="flash"></div>
       <h2>your name</h2>
@@ -240,35 +241,26 @@ async function guestView(token){
   app.innerHTML = `
     <p class="sub">lost</p>
     <p>hi ${esc(me.name)},</p>
-    <p>${confirmed ? 'you\'re confirmed for 03.12.26.' : 'confirm your details to secure your place on 03.12.26.'}</p>
+    <p>your place is confirmed, please add your guests below.</p>
     <div id="flash"></div>
 
     <h2>your details</h2>
-    <div class="field"><label for="n">name</label><input id="n" value="${esc(me.name)}" autocomplete="name"></div>
+    <div class="field"><label for="n">name</label><input id="n" value="${esc(me.name)}" autocomplete="name" readonly></div>
     <div class="field"><label for="e">email</label><input id="e" value="${esc(me.email)}" readonly></div>
-    <div class="field"><label for="p">phone number</label><input id="p" type="tel" value="${esc(me.phone)}" autocomplete="tel" placeholder="07..."></div>
-    <p class="right"><button class="btn" id="conf">${confirmed ? 'update details' : 'confirm'}</button></p>
+    <p class="right"><button class="btn" id="conf" disabled>confirmed</button></p>
 
     ${canAdd ? `
     <h2>your guests</h2>
-    <p class="dim">adding guests is optional. you can add ${me.quota} ${me.quota === 1 ? 'guest' : 'guests'} in total${confirmed ? '' : ' once you have confirmed'}. ${me.level + 1 < MAX_LEVEL && me.child_quota > 0 ? `each of them can add ${me.child_quota === 1 ? '1 guest' : me.child_quota + ' guests'}.` : `they can't add guests of their own.`} the guests you add will be ${accessLabel(me.access)}.</p>
+    <p class="dim">adding guests is optional. you can add ${me.quota} ${me.quota === 1 ? 'guest' : 'guests'} in total. ${me.level + 1 < MAX_LEVEL && me.child_quota > 0 ? `each of them can add ${me.child_quota === 1 ? '1 guest' : me.child_quota + ' guests'}.` : `they can't add guests of their own.`} the guests you add will be ${accessLabel(me.access)}.</p>
     ${children.length ? `<div class="list">${children.map(c => `<div class="item"><span>${esc(c.name)} <span class="dim">${esc(c.email)} · ${accessLabel(c.access)}</span></span><span>${c.status}</span></div>`).join('')}</div>` : ''}
     ${confirmed && remaining > 0 ? `
       <div id="rows"></div>
       <p><button class="btn ghost" id="more">+ another guest</button> <span class="dim">${remaining} left</span></p>
       <p class="right"><button class="btn" id="send">send invites</button></p>
-    ` : `<p class="dim">${confirmed ? 'you have used all your guest places.' : 'confirm your details first.'}</p>`}
+    ` : `<p class="dim">you have used all your guest places.</p>`}
     ` : `<h2>your guests</h2><p class="dim">guest places are not available at this level. see you there.</p>`}`;
 
   const flash = (t, err) => { $('#flash').innerHTML = notice(t, err); window.scrollTo({top:0,behavior:'smooth'}); };
-
-  $('#conf').onclick = async () => {
-    const name = $('#n').value.trim(), phone = $('#p').value.trim();
-    if(!name || phone.replace(/\D/g,'').length < 7){ flash('enter your name and a valid phone number.', true); return; }
-    $('#conf').disabled = true;
-    try { await api.confirm(token, {name, phone}); await guestView(token); $('#flash').innerHTML = notice('saved. you\'re confirmed.'); }
-    catch(e){ flash(e.message, true); $('#conf').disabled = false; }
-  };
 
   if($('#rows')){
     let count = 0;
