@@ -30,13 +30,17 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&
 const queueLine = (v) => ({ standard: 'please join the general admission queue', vip: 'please join the VIP queue', vvip: 'please join the VVIP queue' }[(v || 'standard').toLowerCase()] || 'please join the general admission queue');
 
 const layout = (inner) => `<body style="margin:0;padding:0;background:#000;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#000;color:#fff;font-family:'Courier New',Courier,monospace;font-size:15px;line-height:1.6;">
-<tr><td align="center" style="padding:32px 24px;text-align:center;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#000000" style="background:#000;color:#fff;font-family:'Courier New',Courier,monospace;font-size:13px;line-height:1.45;">
+<tr><td align="center" bgcolor="#000000" style="padding:96px 28px 120px;text-align:center;">
+<table role="presentation" width="280" cellpadding="0" cellspacing="0" style="width:280px;max-width:280px;">
+<tr><td align="center" style="text-align:center;font-family:'Courier New',Courier,monospace;font-size:13px;line-height:1.45;color:#fff;">
 ${inner}
 </td></tr>
 </table>
+</td></tr>
+</table>
 </body>`;
-const para = (html, last = false) => `<p align="center" style="margin:${last ? '0' : '0 0 20px'};text-align:center;">${html}</p>`;
+const para = (html, last = false) => `<p align="center" style="margin:${last ? '64px 0 0' : '0 0 32px'};text-align:center;">${html}</p>`;
 
 function applyMessage({ to, name, token }) {
   const link = `${process.env.SITE_URL}/#token=${token}`;
