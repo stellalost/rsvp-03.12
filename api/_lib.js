@@ -58,11 +58,11 @@ function applyMessage({ to, name, token }) {
     from: process.env.MAIL_FROM,
     to,
     subject: 'lost preview night',
-    text: `hi ${name}\n\nyou are invited to the lost preview night on 03.12\n\nplease fill in the form attached by 02.12 at 12pm\n\nenter\n${link}\n\nyou will be the first to enter\n\nlost`,
+    text: `hi ${name}\n\nyou are invited to the lost preview night on 03.12\n\nplease fill in the form by 02.12 at 12pm\n\nenter\n${link}\n\nyou will be the first to enter\n\nlost`,
     html: layout([
       para(`hi ${safeName}`),
       para('you are invited to the lost preview night on 03.12'),
-      para('please fill in the form attached by 02.12 at 12pm'),
+      para('please fill in the form by 02.12 at 12pm'),
       button(link, 'enter'),
       para('you will be the first to enter'),
       para('lost', true)
@@ -96,7 +96,6 @@ function inviteMessage({ to, name, token, access }) {
     : 'your place at lost preview night 03.12 has been confirmed';
   const queue = `please join the ${letter} queue`;
   const note = 'this evening is designed to help test our systems. prompt arrival is important. you will be the first to enter lost 02. your participation for this evening helps to prepare for opening night.';
-  const address = tier === 'vip';
   const lines = [
     `hi ${name}`,
     '',
@@ -105,17 +104,18 @@ function inviteMessage({ to, name, token, access }) {
     '9pm - 3am',
     '',
     'last entry 12am',
+    '',
+    'we will reveal the address on 03.12 at 12pm',
     ''
   ];
-  if (address) lines.push('20 john princes street', 'london', 'W1G 0BJ', '');
   lines.push(queue, '', `add your guests\n${link}`, '', 'we missed you.', '', 'see you soon.', '', 'lost', '', 'note on our preview night:', '', note);
   const html = [
     para(`hi ${safeName}`),
     para(confirmed),
     para('9pm - 3am'),
-    para('last entry 12am')
+    para('last entry 12am'),
+    para('we will reveal the address on 03.12 at 12pm')
   ];
-  if (address) html.push(para('<a href="" style="text-decoration:none;"><font color="#ffffff">20 john princes street<br>london<br>W1G 0BJ</font></a>'));
   html.push(
     para(queue),
     para(linkText(link, 'add your guests'), false, 36),
