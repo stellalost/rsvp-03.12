@@ -41,11 +41,16 @@ ${inner}
 </table>
 </body>`;
 const para = (html, last = false) => `<p align="center" style="margin:${last ? '40px 0 0' : '0 0 22px'};text-align:center;line-height:1.2;">${html}</p>`;
+const urlText = (link) => {
+  const safe = esc(link).replace('https://', 'https://&#8203;');
+  const at = safe.indexOf('/#');
+  const shown = at === -1 ? safe : `${safe.slice(0, at + 1)}<br>${safe.slice(at + 1)}`;
+  return `<span style="color:#fff;text-decoration:none;">${shown}</span>`;
+};
 
 function applyMessage({ to, name, token }) {
   const link = `${process.env.SITE_URL}/#token=${token}`;
   const safeName = esc(name);
-  const safeLink = esc(link);
   return {
     from: process.env.MAIL_FROM,
     to,
@@ -59,7 +64,7 @@ function applyMessage({ to, name, token }) {
       para('entry is free of charge'),
       para('if successful you will be part of the first group of people to see the space'),
       para('the first to dance'),
-      para(`please fill in the form attached by 02.12 at 12pm<br><a href="${safeLink}" style="color:#fff;word-break:break-all;">${safeLink}</a>`),
+      para(`please fill in the form attached by 02.12 at 12pm<br>${urlText(link)}`),
       para('this link is personal to you. please do not share.'),
       para('lost', true)
     ].join('\n'))
@@ -86,7 +91,6 @@ function ackMessage({ to, name }) {
 function inviteMessage({ to, name, token, access }) {
   const link = `${process.env.SITE_URL}/#token=${token}`;
   const safeName = esc(name);
-  const safeLink = esc(link);
   const queue = queueLine(access);
   return {
     from: process.env.MAIL_FROM,
@@ -100,7 +104,7 @@ function inviteMessage({ to, name, token, access }) {
       para('Last entry 1am'),
       para('20 john princes street<br>london<br>W1G 0BJ'),
       para(esc(queue)),
-      para(`confirm your details and add your guests here:<br><a href="${safeLink}" style="color:#fff;word-break:break-all;">${safeLink}</a>`),
+      para(`confirm your details and add your guests here:<br>${urlText(link)}`),
       para('this link is personal to you. please do not share.'),
       para('we missed you.'),
       para('see you soon.'),
