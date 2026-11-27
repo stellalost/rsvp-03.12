@@ -247,8 +247,8 @@ async function adminView(){
     <div id="flash"></div>
 
     <h2>add first wave</h2>
-    <p class="dim">one per line: name, email, how many they can invite, how many each of those guests can invite.</p>
-    <div class="field"><textarea id="seed" rows="5" placeholder="stella, stellaam@live.com, 3, 1"></textarea></div>
+    <p class="dim">one per line: name, email, how many this person can add, how many each of those guests can add. 0 means they can't add anyone.</p>
+    <div class="field"><textarea id="seed" rows="5" placeholder="stella, stella@gmail.com, 3, 1"></textarea></div>
     <p class="right"><button class="btn" id="go">send links</button></p>
 
     <h2>guest tree</h2>
@@ -257,7 +257,7 @@ async function adminView(){
   const places = (v, fallback) => {
     if(v === undefined || v === '') return fallback;
     const n = parseInt(v, 10);
-    return Number.isFinite(n) && n >= 0 && n <= 10 ? n : null;
+    return Number.isFinite(n) && n >= 0 && n <= CAPACITY ? n : null;
   };
   $('#dl').onclick = () => {
     const byId = Object.fromEntries(rows.map(r => [r.id, r]));
@@ -279,7 +279,7 @@ async function adminView(){
     const seeded = [];
     for(const p of parsed){
       const quota = places(p[2], DEFAULT_QUOTA), child = places(p[3], DEFAULT_CHILD_QUOTA);
-      if(quota === null || child === null){ $('#flash').innerHTML = notice('guest numbers must be from 0 to 10.', true); return; }
+      if(quota === null || child === null){ $('#flash').innerHTML = notice('guest numbers must be from 0 to ' + CAPACITY + '.', true); return; }
       seeded.push({name:p[0], email:p[1], quota, child_quota: child});
     }
     try { await api.adminSeed(seeded); adminView(); }

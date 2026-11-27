@@ -25,14 +25,13 @@ export function guard(req, res, method, admin = false) {
   return true;
 }
 
-function message({ to, name, token, invitedBy = 'we' }) {
+function message({ to, name, token }) {
   const link = `${process.env.SITE_URL}/#token=${token}`;
-  const intro = `${invitedBy} added you to the list for the opening of lost.`;
   return {
     from: process.env.MAIL_FROM,
     to,
     subject: 'lost',
-    text: `hi ${name},\n\n${intro}\n\n03.12.26\n\nconfirm your details and add your guests here:\n${link}\n\nthis link is personal to you. please don't share it.\n\nsee you soon.\n\nlost\n\n*subject to licence*`
+    text: `hi ${name}\n\nyou're on the list for lost preview night.\n\n03.12.26\n\nconfirm your details and add your guests here:\n${link}\n\nthis link is personal to you. please do not share.\n\nwe missed you.\n\nsee you soon.\n\nlost`
   };
 }
 
