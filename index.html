@@ -80,7 +80,7 @@ const accessOf = (v, fallback = 'standard') => {
 };
 
 /* ---------- mock backend (in memory, resets on refresh) ---------- */
-const hours = 60 * 1000;
+const hours = 15 * 60 * 1000;
 const db = [
   {id:1,parent:null,name:'alex',email:'alex@example.com',phone:'07700 900111',status:'confirmed',level:1,quota:5,child_quota:1,access:'vip',child_access:'vip',token:'demo'},
   {id:2,parent:1,name:'sam',email:'sam@example.com',phone:'07700 900222',status:'confirmed',level:2,quota:1,child_quota:0,access:'vip',child_access:'vip',token:'demo2'},
@@ -310,7 +310,7 @@ async function adminView(){
     <div id="flash"></div>
 
     <h2>add first wave</h2>
-    <p class="dim">one per line: name, email, how many this person can add, how many each of those guests can add, access. access is a, b or c. a is vvip, b is vip, c is standard. the people they add get the same. 0 means they can't add anyone. the first email asks them to apply. one minute after they confirm their name, they get the guest list link.</p>
+    <p class="dim">one per line: name, email, how many this person can add, how many each of those guests can add, access. access is a, b or c. a is vvip, b is vip, c is standard. the people they add get the same. 0 means they can't add anyone. the first email asks them to apply. 15 minutes after they confirm their name, they get the guest list link.</p>
     <div class="field"><textarea id="seed" rows="5" placeholder="stella, stella@gmail.com, 3, 1, a"></textarea></div>
     <p class="right"><button class="btn" id="go">send links</button></p>
 

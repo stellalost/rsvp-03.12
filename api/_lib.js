@@ -9,7 +9,7 @@ export const newToken = () => crypto.randomBytes(24).toString('base64url');
 export const hash = (t) => crypto.createHash('sha256').update(t).digest('hex');
 export const bearer = (req) => (req.headers.authorization || '').replace(/^Bearer /, '').trim();
 export const emailOk = (e) => /^\S+@\S+\.\S+$/.test(e) && e.length < 255;
-export const RELEASE_MS = 60 * 1000;
+export const RELEASE_MS = 15 * 60 * 1000;
 
 export function isAdmin(req) {
   const secret = process.env.ADMIN_SECRET;
@@ -42,10 +42,6 @@ const para = (html, last = false, top) => {
   const marginTop = top ?? (last ? 40 : 0);
   return `<p align="center" style="margin:${marginTop}px 0 ${last ? 0 : 22}px;text-align:center;line-height:1.2;">${html}</p>`;
 };
-const linkText = (link, label) => {
-  const safe = esc(link);
-  return `<a href="${safe}" style="color:#ffffff;text-decoration:underline;"><font color="#ffffff">${esc(label)}</font></a>`;
-};
 const button = (link, label) => {
   const safe = esc(link);
   return `<table role="presentation" align="center" cellpadding="0" cellspacing="0" style="margin:36px auto 22px;"><tr><td align="center" bgcolor="#000000" style="border:1px solid #ffffff;background:#000000;"><a href="${safe}" style="display:inline-block;padding:10px 22px;font-family:'Courier New',Courier,monospace;font-size:13px;line-height:1.2;color:#ffffff;text-decoration:none;background:#000000;border:1px solid #ffffff;"><font color="#ffffff">${esc(label)}</font></a></td></tr></table>`;
@@ -53,12 +49,13 @@ const button = (link, label) => {
 
 function applyMessage({ to, name, token }) {
   const link = `${process.env.SITE_URL}/#token=${token}`;
-  const safeName = esc(name);
+  const shown = String(name || '').toLowerCase();
+  const safeName = esc(shown);
   return {
     from: process.env.MAIL_FROM,
     to,
     subject: 'lost preview night',
-    text: `hi ${name}\n\nyou are invited to the lost preview night on 03.12\n\nplease fill in the form by 02.12 at 12pm\n\nenter\n${link}\n\nyou will be the first to enter\n\nlost`,
+    text: `hi ${shown}\n\nyou are invited to the lost preview night on 03.12\n\nplease fill in the form by 02.12 at 12pm\n\nenter\n${link}\n\nyou will be the first to enter\n\nlost`,
     html: layout([
       para(`hi ${safeName}`),
       para('you are invited to the lost preview night on 03.12'),
@@ -71,13 +68,14 @@ function applyMessage({ to, name, token }) {
 }
 
 function ackMessage({ to, name }) {
+  const shown = String(name || '').toLowerCase();
   return {
     from: process.env.MAIL_FROM,
     to,
     subject: 'lost request',
-    text: `hi ${name}\n\nwe have received your reply for lost preview night\n\nyou will be notified shortly with next steps\n\n03.12\n\nlost`,
+    text: `hi ${shown}\n\nwe have received your reply for lost preview night\n\nyou will be notified shortly with next steps\n\n03.12\n\nlost`,
     html: layout([
-      para(`hi ${esc(name)}`),
+      para(`hi ${esc(shown)}`),
       para('we have received your reply for lost preview night'),
       para('you will be notified shortly with next steps'),
       para('03.12'),
@@ -88,16 +86,17 @@ function ackMessage({ to, name }) {
 
 function inviteMessage({ to, name, token, access }) {
   const link = `${process.env.SITE_URL}/#token=${token}`;
-  const safeName = esc(name);
+  const shown = String(name || '').toLowerCase();
+  const safeName = esc(shown);
   const tier = (access || 'standard').toLowerCase();
-  const letter = { vvip: 'A', vip: 'B', standard: 'C' }[tier] || 'C';
+  const letter = { vvip: 'a', vip: 'b', standard: 'c' }[tier] || 'c';
   const confirmed = tier === 'standard'
     ? 'your place at lost preview night has been confirmed'
     : 'your place at lost preview night 03.12 has been confirmed';
   const queue = `please join the ${letter} queue`;
   const note = 'this evening is designed to help test our systems. prompt arrival is important. you will be the first to enter lost 02. your participation for this evening helps to prepare for opening night.';
   const lines = [
-    `hi ${name}`,
+    `hi ${shown}`,
     '',
     confirmed,
     '',
@@ -118,7 +117,7 @@ function inviteMessage({ to, name, token, access }) {
   ];
   html.push(
     para(queue),
-    para(linkText(link, 'add your guests'), false, 36),
+    button(link, 'add your guests'),
     para('we missed you.'),
     para('see you soon.'),
     para('lost'),
