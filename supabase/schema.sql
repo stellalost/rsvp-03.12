@@ -8,10 +8,20 @@ create table if not exists invites (
   level int not null default 1,
   quota int not null default 3,
   child_quota int not null default 3,
+  access text not null default 'standard' check (access in ('standard','vip','vvip')),
+  child_access text not null default 'standard' check (child_access in ('standard','vip','vvip')),
   token_hash text not null unique,
   created_at timestamptz not null default now()
 );
 alter table invites add column if not exists child_quota int not null default 3;
+alter table invites add column if not exists access text not null default 'standard';
+alter table invites add column if not exists child_access text not null default 'standard';
+do $$ begin
+  alter table invites add constraint invites_access_check check (access in ('standard','vip','vvip'));
+exception when duplicate_object then null; end $$;
+do $$ begin
+  alter table invites add constraint invites_child_access_check check (child_access in ('standard','vip','vvip'));
+exception when duplicate_object then null; end $$;
 
 create unique index if not exists invites_email_active on invites (lower(email)) where status <> 'revoked';
 create index if not exists invites_parent on invites (parent_id);
@@ -52,8 +62,8 @@ begin
   if used + n > me.quota then raise exception 'that is more guests than you have left.'; end if;
   if reserved_places() > 1400 then raise exception 'the guest list is full.'; end if;
   return query
-    insert into invites (parent_id, name, email, level, quota, child_quota, token_hash)
-    select me.id, g->>'name', lower(g->>'email'), me.level + 1, me.child_quota, 0, g->>'token_hash'
+    insert into invites (parent_id, name, email, level, quota, child_quota, access, child_access, token_hash)
+    select me.id, g->>'name', lower(g->>'email'), me.level + 1, me.child_quota, 0, me.child_access, me.child_access, g->>'token_hash'
     from jsonb_array_elements(p_guests) g
     returning *;
 end $$;
@@ -71,8 +81,11 @@ begin
   from jsonb_array_elements(p_rows) r;
   if reserved_places() + incoming > 1400 then raise exception 'that would go over the capacity of 1400.'; end if;
   return query
-    insert into invites (name, email, level, quota, child_quota, token_hash)
-    select r->>'name', lower(r->>'email'), 1, coalesce((r->>'quota')::int, 3), coalesce((r->>'child_quota')::int, 3), r->>'token_hash'
+    insert into invites (name, email, level, quota, child_quota, access, child_access, token_hash)
+    select r->>'name', lower(r->>'email'), 1, coalesce((r->>'quota')::int, 3), coalesce((r->>'child_quota')::int, 3),
+      coalesce(nullif(lower(r->>'access'), ''), 'standard'),
+      coalesce(nullif(lower(r->>'child_access'), ''), 'standard'),
+      r->>'token_hash'
     from jsonb_array_elements(p_rows) r
     on conflict (lower(email)) where status <> 'revoked' do nothing
     returning *;

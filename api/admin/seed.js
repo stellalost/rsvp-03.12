@@ -16,7 +16,15 @@ export default async function handler(req, res) {
       const v = parseInt(n, 10);
       return Math.min(1400, Math.max(0, Number.isFinite(v) ? v : fallback));
     };
-    clean.push({ name, email, quota: places(r.quota, 3), child_quota: places(r.child_quota, 3), token: newToken() });
+    const access = (n) => {
+      const v = String(n || 'standard').trim().toLowerCase().replace(/\s+access$/, '');
+      if (!['standard', 'vip', 'vvip'].includes(v)) return null;
+      return v;
+    };
+    const tier = access(r.access);
+    const childTier = access(r.child_access);
+    if (!tier || !childTier) return res.status(400).json({ error: 'access must be standard, vip or vvip.' });
+    clean.push({ name, email, quota: places(r.quota, 3), child_quota: places(r.child_quota, 3), access: tier, child_access: childTier, token: newToken() });
   }
   const payload = clean.map(({ token, ...r }, i) => ({ ...r, token_hash: hash(clean[i].token) }));
   const { data, error } = await db.rpc('seed_invites', { p_rows: payload });
