@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>lost</title>
+<link rel="icon" href="favicon.png" type="image/png">
 <style>
 :root{--bg:#000;--fg:#fff;--dim:#777;--line:#fff}
 *{box-sizing:border-box}
@@ -27,6 +28,7 @@ input:focus,textarea:focus,button:focus-visible,a:focus-visible{outline:2px soli
 .btn[disabled]{opacity:.35;cursor:default;background:transparent;color:var(--fg)}
 .btn.ghost{border-color:#444;font-weight:400;padding:6px 12px;font-size:13px}
 .right{text-align:right}
+.actions{display:flex;flex-wrap:wrap;gap:12px}
 .list{border-top:1px solid #333;margin:0 0 24px}
 .item{display:flex;justify-content:space-between;gap:16px;padding:14px 0;border-bottom:1px solid #333}
 .item span:last-child{color:var(--dim);white-space:nowrap}
@@ -258,7 +260,7 @@ async function adminView(){
   app.innerHTML = `
     <p class="sub">guest list admin</p>
     <p>${reserved} / ${CAPACITY} places <span class="dim">(${confirmed} confirmed)</span></p>
-    <p><button class="btn ghost" id="dl">download invited and confirmed</button> <button class="btn ghost" id="clear">clear registry</button></p>
+    <p class="actions"><button class="btn" id="dl">download invited and confirmed</button><button class="btn" id="clear">clear registry</button></p>
     <div class="bar"><i style="width:${Math.min(100, reserved / CAPACITY * 100)}%"></i></div>
     <div id="flash"></div>
 

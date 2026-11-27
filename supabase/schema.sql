@@ -92,3 +92,8 @@ revoke execute on function reserved_places() from public, anon, authenticated;
 revoke execute on function add_guests(text, jsonb) from public, anon, authenticated;
 revoke execute on function seed_invites(jsonb) from public, anon, authenticated;
 revoke execute on function revoke_branch(bigint) from public, anon, authenticated;
+
+grant execute on function reserved_places() to service_role;
+grant execute on function add_guests(text, jsonb) to service_role;
+grant execute on function seed_invites(jsonb) to service_role;
+grant execute on function revoke_branch(bigint) to service_role;
