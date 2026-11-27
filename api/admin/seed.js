@@ -30,6 +30,6 @@ export default async function handler(req, res) {
   const { data, error } = await db.rpc('seed_invites', { p_rows: payload });
   if (error) return res.status(400).json({ error: error.message });
   const added = new Set(data.map((d) => d.email));
-  await sendMany(clean.filter((c) => added.has(c.email)).map((c) => ({ to: c.email, name: c.name, token: c.token, invitedBy: 'we' })));
+  await sendMany(clean.filter((c) => added.has(c.email)).map((c) => ({ to: c.email, name: c.name, token: c.token, access: c.access })));
   res.json({ added: data.length, skipped: clean.length - data.length });
 }

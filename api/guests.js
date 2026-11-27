@@ -16,7 +16,7 @@ export default async function handler(req, res) {
     if (error.code === '23505') return res.status(409).json({ error: 'one of those emails is already on the list.' });
     return res.status(400).json({ error: error.message });
   }
-  const { data: me } = await db.from('invites').select('name').eq('token_hash', hash(token)).single();
-  await sendMany(clean.map((g, i) => ({ to: g.email, name: g.name, token: raw[i], invitedBy: me?.name })));
+  const { data: me } = await db.from('invites').select('child_access').eq('token_hash', hash(token)).single();
+  await sendMany(clean.map((g, i) => ({ to: g.email, name: g.name, token: raw[i], access: me?.child_access })));
   res.json({ ok: true });
 }

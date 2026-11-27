@@ -26,21 +26,24 @@ export function guard(req, res, method, admin = false) {
 }
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const accessLabel = (v) => ({ standard: 'standard', vip: 'VIP', vvip: 'VVIP' }[(v || 'standard').toLowerCase()] || 'standard');
 
-function message({ to, name, token }) {
+function message({ to, name, token, access }) {
   const link = `${process.env.SITE_URL}/#token=${token}`;
   const safeName = esc(name);
   const safeLink = esc(link);
+  const tier = accessLabel(access);
   return {
     from: process.env.MAIL_FROM,
     to,
     subject: 'lost opening night',
-    text: `hi ${name}\n\nyou're on the list for lost preview night.\n\n03.12.26\n\nconfirm your details and add your guests here:\n${link}\n\nthis link is personal to you. please do not share.\n\nwe missed you.\n\nsee you soon.\n\nlost`,
+    text: `hi ${name}\n\nyou're on the list for lost preview night.\n\nyour access is ${tier}.\n\n03.12.26\n\nconfirm your details and add your guests here:\n${link}\n\nthis link is personal to you. please do not share.\n\nwe missed you.\n\nsee you soon.\n\nlost`,
     html: `<body style="margin:0;padding:0;background:#000;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#000;color:#fff;font-family:'Courier New',Courier,monospace;font-size:15px;line-height:1.6;">
 <tr><td style="padding:32px 24px;">
 <p style="margin:0 0 20px;">hi ${safeName}</p>
 <p style="margin:0 0 20px;">you're on the list for lost preview night.</p>
+<p style="margin:0 0 20px;">your access is ${esc(tier)}.</p>
 <p style="margin:0 0 20px;">03.12.26</p>
 <p style="margin:0 0 20px;">confirm your details and add your guests here:<br><a href="${safeLink}" style="color:#fff;">${safeLink}</a></p>
 <p style="margin:0 0 20px;">this link is personal to you. please do not share.</p>
