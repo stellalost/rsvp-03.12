@@ -19,9 +19,28 @@ create index if not exists invites_parent on invites (parent_id);
 -- no policies = nobody can read or write from the browser. only the server (service key) can.
 alter table invites enable row level security;
 
+-- one person, plus the guests they can still add, plus the guests those open places can add.
+create or replace function reserved_places()
+returns int language sql stable as $$
+  with kids as (
+    select parent_id, count(*)::int as n
+    from invites
+    where status <> 'revoked' and parent_id is not null
+    group by parent_id
+  )
+  select coalesce(sum(
+    1
+    + case when i.level < 3 then greatest(i.quota - coalesce(k.n, 0), 0) else 0 end
+    + case when i.level < 2 then greatest(i.quota - coalesce(k.n, 0), 0) * greatest(i.child_quota, 0) else 0 end
+  ), 0)::int
+  from invites i
+  left join kids k on k.parent_id = i.id
+  where i.status <> 'revoked';
+$$;
+
 create or replace function add_guests(p_token_hash text, p_guests jsonb)
 returns setof invites language plpgsql as $$
-declare me invites; used int; n int; total int;
+declare me invites; used int; n int;
 begin
   perform pg_advisory_xact_lock(1400);
   select * into me from invites where token_hash = p_token_hash and status <> 'revoked' for update;
@@ -31,8 +50,7 @@ begin
   n := jsonb_array_length(p_guests);
   select count(*) into used from invites where parent_id = me.id and status <> 'revoked';
   if used + n > me.quota then raise exception 'that is more guests than you have left.'; end if;
-  select count(*) into total from invites where status <> 'revoked';
-  if total + n > 1400 then raise exception 'the guest list is full.'; end if;
+  if reserved_places() > 1400 then raise exception 'the guest list is full.'; end if;
   return query
     insert into invites (parent_id, name, email, level, quota, child_quota, token_hash)
     select me.id, g->>'name', lower(g->>'email'), me.level + 1, me.child_quota, 0, g->>'token_hash'
@@ -42,12 +60,16 @@ end $$;
 
 create or replace function seed_invites(p_rows jsonb)
 returns setof invites language plpgsql as $$
-declare n int; total int;
+declare incoming int;
 begin
   perform pg_advisory_xact_lock(1400);
-  n := jsonb_array_length(p_rows);
-  select count(*) into total from invites where status <> 'revoked';
-  if total + n > 1400 then raise exception 'that would go over the capacity of 1400.'; end if;
+  select coalesce(sum(
+    1
+    + greatest(coalesce((r->>'quota')::int, 3), 0)
+    + greatest(coalesce((r->>'quota')::int, 3), 0) * greatest(coalesce((r->>'child_quota')::int, 3), 0)
+  ), 0) into incoming
+  from jsonb_array_elements(p_rows) r;
+  if reserved_places() + incoming > 1400 then raise exception 'that would go over the capacity of 1400.'; end if;
   return query
     insert into invites (name, email, level, quota, child_quota, token_hash)
     select r->>'name', lower(r->>'email'), 1, coalesce((r->>'quota')::int, 3), coalesce((r->>'child_quota')::int, 3), r->>'token_hash'
@@ -66,6 +88,7 @@ returns void language sql as $$
   update invites set status = 'revoked' where id in (select id from t);
 $$;
 
+revoke execute on function reserved_places() from public, anon, authenticated;
 revoke execute on function add_guests(text, jsonb) from public, anon, authenticated;
 revoke execute on function seed_invites(jsonb) from public, anon, authenticated;
 revoke execute on function revoke_branch(bigint) from public, anon, authenticated;
