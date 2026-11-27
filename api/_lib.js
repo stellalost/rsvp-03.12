@@ -45,9 +45,9 @@ const para = (html, last = false, top) => {
   const marginTop = top ?? (last ? 40 : 0);
   return `<p align="center" style="margin:${marginTop}px 0 ${last ? 0 : 22}px;text-align:center;line-height:1.2;">${html}</p>`;
 };
-const button = (link, label) => {
+const linkText = (link, label) => {
   const safe = esc(link);
-  return `<table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin:36px auto 22px;"><tr><td align="center" bgcolor="#000000" style="background:#000000;border:1px solid #ffffff;padding:12px 28px;"><a href="${safe}" style="color:#ffffff;text-decoration:none;font-family:'Courier New',Courier,monospace;font-size:13px;line-height:1.2;"><font color="#ffffff">${esc(label)}</font></a></td></tr></table>`;
+  return `<a href="${safe}" style="color:#ffffff;text-decoration:underline;"><font color="#ffffff">${esc(label)}</font></a>`;
 };
 
 function applyMessage({ to, name, token }) {
@@ -67,7 +67,7 @@ function applyMessage({ to, name, token }) {
       para('if successful you will be part of the first group of people to see the space'),
       para('the first to dance'),
       para('please fill in the form attached by 02.12 at 12pm'),
-      button(link, 'rsvp'),
+      para(linkText(link, 'request access'), false, 36),
       para('this link is personal to you. please do not share.'),
       para('lost', true)
     ].join('\n'))
@@ -108,7 +108,7 @@ function inviteMessage({ to, name, token, access }) {
       para('<a href="" style="text-decoration:none;"><font color="#ffffff">20 john princes street<br>london<br>W1G 0BJ</font></a>'),
       para(esc(queue)),
       para('confirm your details and add your guests here:'),
-      button(link, 'confirm'),
+      para(linkText(link, 'confirm attendance'), false, 36),
       para('this link is personal to you. please do not share.'),
       para('we missed you.'),
       para('see you soon.'),
