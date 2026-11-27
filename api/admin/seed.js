@@ -22,14 +22,13 @@ export default async function handler(req, res) {
       return v;
     };
     const tier = access(r.access);
-    const childTier = access(r.child_access);
-    if (!tier || !childTier) return res.status(400).json({ error: 'access must be standard, vip or vvip.' });
-    clean.push({ name, email, quota: places(r.quota, 3), child_quota: places(r.child_quota, 3), access: tier, child_access: childTier, token: newToken() });
+    if (!tier) return res.status(400).json({ error: 'access must be standard, vip or vvip.' });
+    clean.push({ name, email, quota: places(r.quota, 3), child_quota: places(r.child_quota, 3), access: tier, child_access: tier, token: newToken() });
   }
   const payload = clean.map(({ token, ...r }, i) => ({ ...r, token_hash: hash(clean[i].token) }));
   const { data, error } = await db.rpc('seed_invites', { p_rows: payload });
   if (error) return res.status(400).json({ error: error.message });
   const added = new Set(data.map((d) => d.email));
-  await sendMany(clean.filter((c) => added.has(c.email)).map((c) => ({ to: c.email, name: c.name, token: c.token, access: c.access })));
+  await sendMany(clean.filter((c) => added.has(c.email)).map((c) => ({ to: c.email, name: c.name, token: c.token })), 'apply');
   res.json({ added: data.length, skipped: clean.length - data.length });
 }

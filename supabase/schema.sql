@@ -4,18 +4,37 @@ create table if not exists invites (
   name text not null,
   email text not null,
   phone text,
-  status text not null default 'invited' check (status in ('invited','confirmed','revoked')),
+  status text not null default 'invited' check (status in ('invited','applied','confirmed','revoked')),
   level int not null default 1,
   quota int not null default 3,
   child_quota int not null default 3,
   access text not null default 'standard' check (access in ('standard','vip','vvip')),
   child_access text not null default 'standard' check (child_access in ('standard','vip','vvip')),
   token_hash text not null unique,
+  applied_at timestamptz,
+  release_at timestamptz,
+  release_email_id text,
   created_at timestamptz not null default now()
 );
 alter table invites add column if not exists child_quota int not null default 3;
 alter table invites add column if not exists access text not null default 'standard';
 alter table invites add column if not exists child_access text not null default 'standard';
+alter table invites add column if not exists applied_at timestamptz;
+alter table invites add column if not exists release_at timestamptz;
+alter table invites add column if not exists release_email_id text;
+do $$
+declare c name;
+begin
+  for c in
+    select con.conname
+    from pg_constraint con
+    join pg_class rel on rel.oid = con.conrelid
+    where rel.relname = 'invites' and con.contype = 'c' and pg_get_constraintdef(con.oid) ilike '%status%'
+  loop
+    execute format('alter table invites drop constraint %I', c);
+  end loop;
+end $$;
+alter table invites add constraint invites_status_check check (status in ('invited','applied','confirmed','revoked'));
 do $$ begin
   alter table invites add constraint invites_access_check check (access in ('standard','vip','vvip'));
 exception when duplicate_object then null; end $$;
@@ -63,7 +82,7 @@ begin
   if reserved_places() > 1400 then raise exception 'the guest list is full.'; end if;
   return query
     insert into invites (parent_id, name, email, level, quota, child_quota, access, child_access, token_hash)
-    select me.id, g->>'name', lower(g->>'email'), me.level + 1, me.child_quota, 0, me.child_access, me.child_access, g->>'token_hash'
+    select me.id, g->>'name', lower(g->>'email'), me.level + 1, me.child_quota, 0, me.access, me.access, g->>'token_hash'
     from jsonb_array_elements(p_guests) g
     returning *;
 end $$;
@@ -84,7 +103,7 @@ begin
     insert into invites (name, email, level, quota, child_quota, access, child_access, token_hash)
     select r->>'name', lower(r->>'email'), 1, coalesce((r->>'quota')::int, 3), coalesce((r->>'child_quota')::int, 3),
       coalesce(nullif(lower(r->>'access'), ''), 'standard'),
-      coalesce(nullif(lower(r->>'child_access'), ''), 'standard'),
+      coalesce(nullif(lower(r->>'access'), ''), 'standard'),
       r->>'token_hash'
     from jsonb_array_elements(p_rows) r
     on conflict (lower(email)) where status <> 'revoked' do nothing
