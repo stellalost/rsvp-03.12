@@ -27,7 +27,7 @@ export function guard(req, res, method, admin = false) {
 }
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const accessLabel = (v) => ({ standard: 'standard', vip: 'VIP', vvip: 'VVIP' }[(v || 'standard').toLowerCase()] || 'standard');
+const queueLine = (v) => ({ standard: 'please join the general admission queue', vip: 'please join the VIP queue', vvip: 'please join the VVIP queue' }[(v || 'standard').toLowerCase()] || 'please join the general admission queue');
 
 const layout = (inner) => `<body style="margin:0;padding:0;background:#000;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#000;color:#fff;font-family:'Courier New',Courier,monospace;font-size:15px;line-height:1.6;">
@@ -46,12 +46,16 @@ function applyMessage({ to, name, token }) {
     from: process.env.MAIL_FROM,
     to,
     subject: 'lost',
-    text: `hi ${name}\n\nyou have been chosen to apply to attend.\n\n03.12.26\n\nconfirm your name here:\n${link}\n\nthis link is personal to you. please do not share.\n\nlost`,
+    text: `hi ${name}\n\nyou are invited to request access to the lost preview night\n\n03.12\n\nthis is an invite only night\n\nentry is free of charge\n\nif successful you will be part of the first group of people to see the space\n\nthe first to dance\n\nplease fill in the form attached by 02.12 at 12pm\n${link}\n\nthis link is personal to you. please do not share.\n\nlost`,
     html: layout([
       para(`hi ${safeName}`),
-      para('you have been chosen to apply to attend.'),
-      para('03.12.26'),
-      para(`confirm your name here:<br><a href="${safeLink}" style="color:#fff;">${safeLink}</a>`),
+      para('you are invited to request access to the lost preview night'),
+      para('03.12'),
+      para('this is an invite only night'),
+      para('entry is free of charge'),
+      para('if successful you will be part of the first group of people to see the space'),
+      para('the first to dance'),
+      para(`please fill in the form attached by 02.12 at 12pm<br><a href="${safeLink}" style="color:#fff;">${safeLink}</a>`),
       para('this link is personal to you. please do not share.'),
       para('lost', true)
     ].join('\n'))
@@ -63,10 +67,13 @@ function ackMessage({ to, name }) {
     from: process.env.MAIL_FROM,
     to,
     subject: 'lost',
-    text: `hi ${name}\n\nthanks. we have received your request and will get back to you.\n\nlost`,
+    text: `hi ${name}\n\nwe have received your request for lost preview night\n\n03.12\n\nyou have been added to the waitlist\n\nif your place is confirmed you will receive a confirmation\n\nlost`,
     html: layout([
       para(`hi ${esc(name)}`),
-      para('thanks. we have received your request and will get back to you.'),
+      para('we have received your request for lost preview night'),
+      para('03.12'),
+      para('you have been added to the waitlist'),
+      para('if your place is confirmed you will receive a confirmation'),
       para('lost', true)
     ].join('\n'))
   };
@@ -76,17 +83,19 @@ function inviteMessage({ to, name, token, access }) {
   const link = `${process.env.SITE_URL}/#token=${token}`;
   const safeName = esc(name);
   const safeLink = esc(link);
-  const tier = accessLabel(access);
+  const queue = queueLine(access);
   return {
     from: process.env.MAIL_FROM,
     to,
     subject: 'lost opening night',
-    text: `hi ${name}\n\nyou're on the list for lost preview night.\n\nyour access is ${tier}.\n\n03.12.26\n\nconfirm your details and add your guests here:\n${link}\n\nthis link is personal to you. please do not share.\n\nwe missed you.\n\nsee you soon.\n\nlost`,
+    text: `hi ${name}\n\nyour place at lost preview night 03.12 has been confirmed\n\n9pm - 3am\n\nLast entry 1am\n\n20 john princes street\nlondon\nW1G 0BJ\n\n${queue}\n\nconfirm your details and add your guests here:\n${link}\n\nthis link is personal to you. please do not share.\n\nwe missed you.\n\nsee you soon.\n\nlost`,
     html: layout([
       para(`hi ${safeName}`),
-      para('you\'re on the list for lost preview night.'),
-      para(`your access is ${esc(tier)}.`),
-      para('03.12.26'),
+      para('your place at lost preview night 03.12 has been confirmed'),
+      para('9pm - 3am'),
+      para('Last entry 1am'),
+      para('20 john princes street<br>london<br>W1G 0BJ'),
+      para(esc(queue)),
       para(`confirm your details and add your guests here:<br><a href="${safeLink}" style="color:#fff;">${safeLink}</a>`),
       para('this link is personal to you. please do not share.'),
       para('we missed you.'),
