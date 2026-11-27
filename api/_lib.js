@@ -30,17 +30,17 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&
 const queueLine = (v) => ({ standard: 'please join the general admission queue', vip: 'please join the VIP queue', vvip: 'please join the VVIP queue' }[(v || 'standard').toLowerCase()] || 'please join the general admission queue');
 
 const layout = (inner) => `<body style="margin:0;padding:0;background:#000;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#000000" style="background:#000;color:#fff;font-family:'Courier New',Courier,monospace;font-size:13px;line-height:1.45;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#000000" style="background:#000;color:#fff;font-family:'Courier New',Courier,monospace;font-size:13px;line-height:1.2;">
 <tr><td align="center" bgcolor="#000000" style="padding:96px 28px 120px;text-align:center;">
-<table role="presentation" width="280" cellpadding="0" cellspacing="0" style="width:280px;max-width:280px;">
-<tr><td align="center" style="text-align:center;font-family:'Courier New',Courier,monospace;font-size:13px;line-height:1.45;color:#fff;">
+<table role="presentation" align="center" width="280" cellpadding="0" cellspacing="0" style="width:280px;max-width:280px;margin:0 auto;">
+<tr><td align="center" style="text-align:center;font-family:'Courier New',Courier,monospace;font-size:13px;line-height:1.2;color:#fff;">
 ${inner}
 </td></tr>
 </table>
 </td></tr>
 </table>
 </body>`;
-const para = (html, last = false) => `<p align="center" style="margin:${last ? '64px 0 0' : '0 0 32px'};text-align:center;">${html}</p>`;
+const para = (html, last = false) => `<p align="center" style="margin:${last ? '40px 0 0' : '0 0 22px'};text-align:center;line-height:1.2;">${html}</p>`;
 
 function applyMessage({ to, name, token }) {
   const link = `${process.env.SITE_URL}/#token=${token}`;
@@ -59,7 +59,7 @@ function applyMessage({ to, name, token }) {
       para('entry is free of charge'),
       para('if successful you will be part of the first group of people to see the space'),
       para('the first to dance'),
-      para(`please fill in the form attached by 02.12 at 12pm<br><a href="${safeLink}" style="color:#fff;">${safeLink}</a>`),
+      para(`please fill in the form attached by 02.12 at 12pm<br><a href="${safeLink}" style="color:#fff;word-break:break-all;">${safeLink}</a>`),
       para('this link is personal to you. please do not share.'),
       para('lost', true)
     ].join('\n'))
@@ -100,7 +100,7 @@ function inviteMessage({ to, name, token, access }) {
       para('Last entry 1am'),
       para('20 john princes street<br>london<br>W1G 0BJ'),
       para(esc(queue)),
-      para(`confirm your details and add your guests here:<br><a href="${safeLink}" style="color:#fff;">${safeLink}</a>`),
+      para(`confirm your details and add your guests here:<br><a href="${safeLink}" style="color:#fff;word-break:break-all;">${safeLink}</a>`),
       para('this link is personal to you. please do not share.'),
       para('we missed you.'),
       para('see you soon.'),
