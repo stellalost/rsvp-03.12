@@ -55,13 +55,13 @@ function applyMessage({ to, name, token }) {
     from: process.env.MAIL_FROM,
     to,
     subject: 'lost preview night',
-    text: `hi ${shown}\n\nyou are invited to the lost preview night on 03.12\n\nplease fill in the form by 02.12 at 12pm\n\nenter\n${link}\n\nyou will be the first to enter\n\nlost`,
+    text: `hi ${shown}\n\nyou are invited to the lost preview night on 03.12\n\nplease fill in the form by 02.12 at 12pm\n\nenter\n${link}\n\nyou will be the first\n\nlost`,
     html: layout([
       para(`hi ${safeName}`),
       para('you are invited to the lost preview night on 03.12'),
       para('please fill in the form by 02.12 at 12pm'),
       button(link, 'enter'),
-      para('you will be the first to enter'),
+      para('you will be the first'),
       para('lost', true)
     ].join('\n'))
   };
