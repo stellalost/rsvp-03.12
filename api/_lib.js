@@ -35,6 +35,7 @@ const layout = (inner) => `<html><head><meta name="format-detection" content="ad
 <table role="presentation" align="center" width="280" cellpadding="0" cellspacing="0" style="width:280px;max-width:280px;margin:0 auto;">
 <tr><td align="center" style="text-align:center;font-family:'Courier New',Courier,monospace;font-size:13px;line-height:1.2;color:#fff;">
 ${inner}
+<div style="display:none;max-height:0;overflow:hidden;">${Date.now()}-${Math.random().toString(36).slice(2)}</div>
 </td></tr>
 </table>
 </td></tr>
@@ -46,7 +47,7 @@ const para = (html, last = false, top) => {
 };
 const urlLink = (link) => {
   const safe = esc(link);
-  return `<a href="${safe}" style="color:#fff;text-decoration:underline;">${safe}</a>`;
+  return `<a href="${safe}" style="text-decoration:underline;"><font color="#ffffff">${safe}</font></a>`;
 };
 
 function applyMessage({ to, name, token }) {
@@ -104,7 +105,7 @@ function inviteMessage({ to, name, token, access }) {
       para('your place at lost preview night 03.12 has been confirmed'),
       para('9pm - 3am'),
       para('Last entry 1am'),
-      para('20&#8203; john princes street<br>london<br>W1G&#8203; 0BJ'),
+      para('<a href="" style="text-decoration:none;"><font color="#ffffff">20 john princes street<br>london<br>W1G 0BJ</font></a>'),
       para(esc(queue)),
       para('confirm your details and add your guests here:'),
       para(urlLink(link), false, 36),
