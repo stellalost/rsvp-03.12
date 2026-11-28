@@ -152,8 +152,12 @@ export async function sendMany(items, kind = 'invite') {
   const build = builders[kind];
   for (let i = 0; i < items.length; i += 100) {
     const { error } = await resend.batch.send(items.slice(i, i + 100).map(build));
-    if (error) console.error('resend error', error);
+    if (error) {
+      console.error('resend error', error);
+      return error;
+    }
   }
+  return null;
 }
 
 export async function scheduleInvite(item, when) {

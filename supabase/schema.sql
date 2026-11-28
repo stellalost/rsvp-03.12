@@ -97,7 +97,11 @@ begin
     + greatest(coalesce((r->>'quota')::int, 3), 0)
     + greatest(coalesce((r->>'quota')::int, 3), 0) * greatest(coalesce((r->>'child_quota')::int, 3), 0)
   ), 0) into incoming
-  from jsonb_array_elements(p_rows) r;
+  from jsonb_array_elements(p_rows) r
+  where not exists (
+    select 1 from invites i
+    where i.status <> 'revoked' and lower(i.email) = lower(r->>'email')
+  );
   if reserved_places() + incoming > 3000 then raise exception 'that would go over the capacity of 3000.'; end if;
   return query
     insert into invites (name, email, level, quota, child_quota, access, child_access, token_hash)

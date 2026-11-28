@@ -7,7 +7,8 @@ export default async function handler(req, res) {
   const h = hash(token);
   const { data: me } = await db.from('invites').select('id,name,email,phone,status,level,quota,child_quota,access,child_access,release_at').eq('token_hash', h).neq('status', 'revoked').maybeSingle();
   if (!me) return res.status(404).json({ error: 'this link is not valid or has been cancelled.' });
-  const released = me.status === 'confirmed' || (me.status === 'applied' && me.release_at && new Date(me.release_at).getTime() <= Date.now());
+  const due = me.release_at && new Date(me.release_at).getTime() <= Date.now();
+  const released = me.status === 'confirmed' ? due || !me.release_at : me.status === 'applied' && !!due;
   if (!released) {
     return res.json({ me: { name: me.name, email: me.email, status: me.status }, children: [], remaining: 0, released: false });
   }

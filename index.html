@@ -39,13 +39,15 @@ input.bad{border-style:dashed}
 .msg.err{border-style:dashed}
 .tree{margin:0;padding:0;list-style:none}
 .tree ul{list-style:none;margin:0;padding-left:22px;border-left:1px solid #333}
-.node{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:8px 0;flex-wrap:wrap}
+.node{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:8px 0}
+.node:has(.num){grid-template-columns:3.2em 1fr auto}
+.node .num{color:var(--dim);font-variant-numeric:tabular-nums}
 .node.revoked{opacity:.35;text-decoration:line-through}
 .bar{height:1px;background:#333;margin:12px 0 28px}
 .bar i{display:block;height:3px;background:var(--fg);margin-top:-1px}
 .dev{position:fixed;bottom:0;left:0;right:0;background:#111;border-top:1px solid #333;padding:8px 16px;font-size:12px;text-align:center}
 .dev a{color:var(--dim);margin:0 8px}
-@media(max-width:560px){.row,.row.invite{grid-template-columns:1fr}}
+@media(max-width:560px){.row,.row.invite{grid-template-columns:1fr}.node{align-items:start}}
 @media(prefers-reduced-motion:no-preference){main{animation:in .5s ease both}@keyframes in{from{opacity:0}}}
 </style>
 </head>
@@ -113,7 +115,8 @@ const mockApi = {
     await wait(150);
     const me = db.find(d => d.token === token && d.status !== 'revoked');
     if(!me) throw new Error('this link is not valid or has been cancelled.');
-    const released = me.status === 'confirmed' || (me.status === 'applied' && me.release_at && new Date(me.release_at) <= new Date());
+    const due = me.release_at && new Date(me.release_at) <= new Date();
+    const released = me.status === 'confirmed' ? due || !me.release_at : me.status === 'applied' && !!due;
     if(!released) return {me:{name:me.name, email:me.email, status:me.status}, children:[], remaining:0, released:false};
     if(me.status === 'applied') me.status = 'confirmed';
     const children = kids(me.id).filter(c => c.status !== 'revoked');
@@ -125,15 +128,16 @@ const mockApi = {
     const me = db.find(d => d.token === token && d.status !== 'revoked');
     if(!me) throw new Error('this link is not valid or has been cancelled.');
     if(me.status !== 'invited') return;
-    Object.assign(me, {name:data.name, status:'applied', applied_at:new Date().toISOString(), release_at:new Date(Date.now()+hours).toISOString()});
+    Object.assign(me, {name:data.name, status: me.level >= MAX_LEVEL ? 'confirmed' : 'applied', applied_at:new Date().toISOString(), release_at:new Date(Date.now()+hours).toISOString()});
   },
   // POST /api/confirm  {token, name, phone}
   async confirm(token, data){
     await wait(250);
     const me = db.find(d => d.token === token && d.status !== 'revoked');
     if(!me) throw new Error('this link is not valid or has been cancelled.');
-    const open = me.status === 'confirmed' || (me.status === 'applied' && me.release_at && new Date(me.release_at) <= new Date());
-    if(!open) throw new Error(me.status === 'applied' ? 'we have received your request and will get back to you.' : 'confirm your name first.');
+    const due = me.release_at && new Date(me.release_at) <= new Date();
+    const open = me.status === 'confirmed' ? due || !me.release_at : me.status === 'applied' && !!due;
+    if(!open) throw new Error(me.status === 'invited' ? 'confirm your name first.' : 'we have received your request and will get back to you.');
     Object.assign(me, {name: data.name, phone: data.phone, status: 'confirmed'});
   },
   // POST /api/guests  {token, guests:[{name,email}]}
@@ -156,10 +160,12 @@ const mockApi = {
   // POST /api/admin/seed  {rows:[{name,email,quota,child_quota}]}
   async adminSeed(rows){
     await wait(300);
-    const fresh = rows.filter(r => !db.some(d => d.email.toLowerCase() === r.email.toLowerCase() && d.status !== 'revoked'));
-    if(reservedPlaces(db) + fresh.reduce((n, r) => n + treeSize(r.quota, r.child_quota), 0) > CAPACITY)
+    const dupes = rows.filter(r => db.some(d => d.email.toLowerCase() === r.email.toLowerCase() && d.status !== 'revoked'));
+    if(dupes.length) throw new Error(dupes.map(r => r.email).join(', ') + ' already on the list.');
+    if(reservedPlaces(db) + rows.reduce((n, r) => n + treeSize(r.quota, r.child_quota), 0) > CAPACITY)
       throw new Error('that would go over the capacity of 3000.');
-    fresh.forEach(r => db.push({id:nextId++,parent:null,name:r.name,email:r.email,phone:'',status:'invited',level:1,quota:r.quota,child_quota:r.child_quota,access:r.access,child_access:r.access,token:'t'+nextId}));
+    rows.forEach(r => db.push({id:nextId++,parent:null,name:r.name,email:r.email,phone:'',status:'invited',level:1,quota:r.quota,child_quota:r.child_quota,access:r.access,child_access:r.access,token:'t'+nextId}));
+    return {added: rows.length, skipped: 0};
   },
   async adminClear(){ await wait(150); db.splice(0, db.length); },
   // POST /api/admin/revoke  {id}   revokes the person and their whole branch
@@ -208,7 +214,7 @@ async function guestView(token){
   catch(e){ app.innerHTML = `<p class="sub">lost</p>${notice(e.message, true)}<p class="dim">if you think this is a mistake, reply to the email you received.</p>`; return; }
   const {me, children, remaining, released} = data;
   if(!released){
-    if(me.status === 'applied'){
+    if(me.status === 'applied' || me.status === 'confirmed'){
       app.innerHTML = `
         <p class="sub">lost</p>
         <p>hi ${esc(me.name)},</p>
@@ -302,10 +308,10 @@ async function adminView(){
   const {rows} = await api.adminList();
   const byParent = {};
   rows.forEach(r => (byParent[r.parent ?? 'root'] ||= []).push(r));
-  const render = pid => (byParent[pid] || []).map(r => `
+  const render = (pid, numbered) => (byParent[pid] || []).map((r, i) => `
     <li>
       <div class="node ${r.status}">
-        <span>${esc(r.name)} <span class="dim">${accessLabel(r.access)} · ${esc(r.email)} · ${r.phone ? esc(r.phone) : 'no phone'} · ${r.status}${r.level < MAX_LEVEL ? ` · can invite ${r.quota}${r.level + 1 < MAX_LEVEL ? `, their guests can invite ${r.child_quota}` : ''}` : ''}</span></span>
+        ${numbered ? `<span class="num">${i + 1}.</span>` : ''}<span>${esc(r.name)} <span class="dim">${accessLabel(r.access)} · ${esc(r.email)} · ${r.phone ? esc(r.phone) : 'no phone'} · ${r.status}${r.level < MAX_LEVEL ? ` · can invite ${r.quota}${r.level + 1 < MAX_LEVEL ? `, their guests can invite ${r.child_quota}` : ''}` : ''}</span></span>
         ${r.status !== 'revoked' ? `<button class="btn ghost" data-rv="${r.id}">revoke</button>` : ''}
       </div>
       ${byParent[r.id] ? `<ul>${render(r.id)}</ul>` : ''}
@@ -326,7 +332,7 @@ async function adminView(){
     <p class="right"><button class="btn" id="go">send links</button></p>
 
     <h2>guest tree</h2>
-    <ul class="tree">${render('root')}</ul>`;
+    <ul class="tree">${render('root', true)}</ul>`;
 
   const places = (v, fallback) => {
     if(v === undefined || v === '') return fallback;
@@ -346,20 +352,47 @@ async function adminView(){
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   };
+  const showLines = (lines, err) => {
+    $('#flash').innerHTML = `<div class="msg ${err ? 'err' : ''}" role="status">${lines.map(esc).join('<br>')}</div>`;
+  };
   $('#go').onclick = async () => {
-    const parsed = $('#seed').value.split('\n').map(l => l.split(',').map(x => x.trim())).filter(p => p[0] || p[1]);
-    if(!parsed.length || parsed.some(p => !p[0] || !/^\S+@\S+\.\S+$/.test(p[1] || ''))){
-      $('#flash').innerHTML = notice('each line needs a name and a valid email.', true); return; }
+    const existing = new Set(rows.filter(r => r.status !== 'revoked').map(r => r.email.toLowerCase()));
+    const seen = new Map();
+    const errors = [];
     const seeded = [];
-    for(const p of parsed){
+    $('#seed').value.split('\n').forEach((line, idx) => {
+      const p = line.split(',').map(x => x.trim());
+      if(!p[0] && !p[1]) return;
+      const n = idx + 1;
+      const email = (p[1] || '').toLowerCase();
+      if(!p[0] || !/^\S+@\S+\.\S+$/.test(email)){ errors.push(`line ${n} needs a name and a valid email.`); return; }
       const quota = places(p[2], DEFAULT_QUOTA), child = places(p[3], DEFAULT_CHILD_QUOTA);
       const tier = accessOf(p[4]);
-      if(quota === null || child === null){ $('#flash').innerHTML = notice('guest numbers must be from 0 to ' + CAPACITY + '.', true); return; }
-      if(tier === null){ $('#flash').innerHTML = notice('access must be a, b or c.', true); return; }
-      seeded.push({name:p[0], email:p[1], quota, child_quota: child, access: tier, child_access: tier});
+      let ok = true;
+      if(quota === null || child === null){ errors.push(`line ${n}: guest numbers must be from 0 to ${CAPACITY}.`); ok = false; }
+      if(tier === null){ errors.push(`line ${n}: access must be a, b or c.`); ok = false; }
+      if(seen.has(email)){ errors.push(`line ${n}: ${email} is a duplicate of line ${seen.get(email)}.`); ok = false; }
+      else seen.set(email, n);
+      if(existing.has(email)){ errors.push(`line ${n}: ${email} is already on the list.`); ok = false; }
+      if(ok) seeded.push({name:p[0], email, quota, child_quota: child, access: tier, child_access: tier});
+    });
+    if(!errors.length && !seeded.length){ showLines(['add at least one person.'], true); return; }
+    if(errors.length){ showLines(errors, true); return; }
+    $('#go').disabled = true;
+    let added = 0;
+    try {
+      for(let i = 0; i < seeded.length; i += 100){
+        const result = await api.adminSeed(seeded.slice(i, i + 100));
+        added += result.added || 0;
+        showLines([`added ${added}.`]);
+      }
+      await adminView();
+      showLines([`added ${added}.`]);
+    } catch(e){
+      const sent = added ? `added ${added}. ` : '';
+      try { await adminView(); } catch(_) {}
+      showLines([sent + e.message], true);
     }
-    try { await api.adminSeed(seeded); adminView(); }
-    catch(e){ $('#flash').innerHTML = notice(e.message, true); }
   };
   $('#clear').onclick = async () => {
     if(!confirm('clear the whole guest list? this cannot be undone.')) return;
