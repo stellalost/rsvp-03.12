@@ -93,7 +93,7 @@ function inviteMessage({ to, name, token, access }) {
   const confirmed = tier === 'standard'
     ? 'your place at lost preview night has been confirmed'
     : 'your place at lost preview night 03.12 has been confirmed';
-  const queue = `please join the ${letter} queue`;
+  const queue = `please join queue ${letter}`;
   const note = 'this evening is designed to help test our systems. prompt arrival is important. you will be the first to enter lost 02. your participation for this evening helps to prepare for opening night.';
   const lines = [
     `hi ${shown}`,
@@ -107,7 +107,7 @@ function inviteMessage({ to, name, token, access }) {
     'we will reveal the address on 03.12 at 12pm',
     ''
   ];
-  lines.push(queue, '', `add your guests\n${link}`, '', 'we missed you.', '', 'see you soon.', '', 'lost', '', 'note on our preview night:', '', note);
+  lines.push(queue, '', `add your guests\n${link}`, '', 'missed you.', '', 'see you soon.', '', 'lost', '', 'note on our preview night:', '', note);
   const html = [
     para(`hi ${safeName}`),
     para(confirmed),
@@ -118,7 +118,7 @@ function inviteMessage({ to, name, token, access }) {
   html.push(
     para(queue),
     button(link, 'add your guests'),
-    para('we missed you.'),
+    para('missed you.'),
     para('see you soon.'),
     para('lost'),
     para('note on our preview night:', false, 36),
