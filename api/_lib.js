@@ -9,7 +9,7 @@ export const newToken = () => crypto.randomBytes(24).toString('base64url');
 export const hash = (t) => crypto.createHash('sha256').update(t).digest('hex');
 export const bearer = (req) => (req.headers.authorization || '').replace(/^Bearer /, '').trim();
 export const emailOk = (e) => /^\S+@\S+\.\S+$/.test(e) && e.length < 255;
-export const RELEASE_MS = 15 * 60 * 1000;
+export const RELEASE_MS = 60 * 1000;
 
 export function isAdmin(req) {
   const secret = process.env.ADMIN_SECRET;
@@ -27,11 +27,19 @@ export function guard(req, res, method, admin = false) {
 }
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const layout = (inner) => `<html><head><meta name="format-detection" content="address=no,telephone=no"></head><body style="margin:0;padding:0;background:#000;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#000000" style="background:#000;color:#fff;font-family:'Courier New',Courier,monospace;font-size:13px;line-height:1.2;">
-<tr><td align="center" bgcolor="#000000" style="padding:96px 28px 120px;text-align:center;">
-<table role="presentation" align="center" width="280" cellpadding="0" cellspacing="0" style="width:280px;max-width:280px;margin:0 auto;">
-<tr><td align="center" style="text-align:center;font-family:'Courier New',Courier,monospace;font-size:13px;line-height:1.2;color:#fff;">
+const layout = (inner) => `<html><head>
+<meta name="color-scheme" content="light only">
+<meta name="supported-color-schemes" content="light only">
+<meta name="format-detection" content="address=no,telephone=no">
+<style>
+  body, table, td { background-color:#000000 !important; color:#ffffff !important; }
+  p, a, font { color:#ffffff !important; }
+</style>
+</head><body bgcolor="#000000" style="margin:0;padding:0;background-color:#000000;color:#ffffff;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#000000" style="background-color:#000000;color:#ffffff;font-family:'Courier New',Courier,monospace;font-size:13px;line-height:1.2;">
+<tr><td align="center" bgcolor="#000000" style="background-color:#000000;color:#ffffff;padding:96px 28px 120px;text-align:center;">
+<table role="presentation" align="center" width="280" cellpadding="0" cellspacing="0" bgcolor="#000000" style="background-color:#000000;width:280px;max-width:280px;margin:0 auto;">
+<tr><td align="center" bgcolor="#000000" style="background-color:#000000;text-align:center;font-family:'Courier New',Courier,monospace;font-size:13px;line-height:1.2;color:#ffffff;">
 ${inner}
 </td></tr>
 </table>
@@ -40,11 +48,11 @@ ${inner}
 </body></html>`;
 const para = (html, last = false, top) => {
   const marginTop = top ?? (last ? 40 : 0);
-  return `<p align="center" style="margin:${marginTop}px 0 ${last ? 0 : 22}px;text-align:center;line-height:1.2;">${html}</p>`;
+  return `<p align="center" style="margin:${marginTop}px 0 ${last ? 0 : 22}px;text-align:center;line-height:1.2;background-color:#000000;color:#ffffff;"><font color="#ffffff">${html}</font></p>`;
 };
 const button = (link, label) => {
   const safe = esc(link);
-  return `<table role="presentation" align="center" cellpadding="0" cellspacing="0" style="margin:36px auto 22px;"><tr><td align="center" bgcolor="#000000" style="border:1px solid #ffffff;background:#000000;"><a href="${safe}" style="display:inline-block;padding:10px 22px;font-family:'Courier New',Courier,monospace;font-size:13px;line-height:1.2;color:#ffffff;text-decoration:none;background:#000000;border:1px solid #ffffff;"><font color="#ffffff">${esc(label)}</font></a></td></tr></table>`;
+  return `<table role="presentation" align="center" cellpadding="0" cellspacing="0" bgcolor="#000000" style="background-color:#000000;margin:36px auto 22px;"><tr><td align="center" bgcolor="#000000" style="background-color:#000000;border:1px solid #ffffff;"><a href="${safe}" style="display:inline-block;padding:10px 22px;font-family:'Courier New',Courier,monospace;font-size:13px;line-height:1.2;color:#ffffff;text-decoration:none;background-color:#000000;border:1px solid #ffffff;"><font color="#ffffff">${esc(label)}</font></a></td></tr></table>`;
 };
 
 function applyMessage({ to, name, token }) {
