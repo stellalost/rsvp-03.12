@@ -102,7 +102,7 @@ function inviteMessage({ to, name, token, access, quota, level }) {
   const confirmed = tier === 'standard'
     ? 'your place at lost preview night has been confirmed'
     : 'your place at lost preview night 03.12 has been confirmed';
-  const queue = `please join queue ${letter}`;
+  const queue = `on arrival, please join queue ${letter}`;
   const note = 'this evening is designed to help test our systems. prompt arrival is important. you will be the first to enter lost 02. your participation for this evening helps to prepare for opening night.';
   const lines = [
     `hi ${shown}`,
