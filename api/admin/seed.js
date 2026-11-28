@@ -21,7 +21,7 @@ export default async function handler(req, res) {
       return { a: 'vvip', vvip: 'vvip', b: 'vip', vip: 'vip', c: 'standard', standard: 'standard' }[v] || null;
     };
     const tier = access(r.access);
-    if (!tier) return res.status(400).json({ error: 'access must be a, b or c.' });
+    if (!tier) return res.status(400).json({ error: 'access must be A, B or C.' });
     clean.push({ name, email, quota: places(r.quota, 3), child_quota: places(r.child_quota, 3), access: tier, child_access: tier, token: newToken() });
   }
   const { data: already, error: lookupError } = await db.from('invites').select('email').in('email', clean.map((c) => c.email)).neq('status', 'revoked');

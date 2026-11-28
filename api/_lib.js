@@ -97,7 +97,7 @@ function inviteMessage({ to, name, token, access, quota, level }) {
   const shown = String(name || '').toLowerCase();
   const safeName = esc(shown);
   const tier = (access || 'standard').toLowerCase();
-  const letter = { vvip: 'a', vip: 'b', standard: 'c' }[tier] || 'c';
+  const letter = { vvip: 'A', vip: 'B', standard: 'C' }[tier] || 'C';
   const canInvite = Number(level) < 3 && Number(quota) > 0;
   const confirmed = tier === 'standard'
     ? 'your place at lost preview night has been confirmed'

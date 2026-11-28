@@ -35,7 +35,8 @@ input.bad{border-style:dashed}
 .list{border-top:1px solid #333;margin:0 0 24px}
 .item{display:flex;justify-content:space-between;gap:16px;padding:14px 0;border-bottom:1px solid #333}
 .item span:last-child{color:var(--dim);white-space:nowrap}
-.msg{border:1px solid var(--line);padding:14px;margin:0 0 24px}
+.msg{border:1px solid var(--line);padding:14px;margin:0 0 24px;text-transform:none}
+.q{text-transform:none}
 .msg.err{border-style:dashed}
 .tree{margin:0;padding:0;list-style:none}
 .tree ul{list-style:none;margin:0;padding-left:22px;border-left:1px solid #333}
@@ -76,7 +77,7 @@ const MAX_LEVEL = 3;          // level 1 = first wave, level 3 can't add guests
 const DEFAULT_QUOTA = 3;      // how many guests a first-wave person can add
 const DEFAULT_CHILD_QUOTA = 3; // how many guests each of those people can add
 const ACCESS_CODE = {a:'vvip', vvip:'vvip', b:'vip', vip:'vip', c:'standard', standard:'standard'};
-const accessLabel = v => ({vvip:'a', vip:'b', standard:'c'}[(v || 'standard').toLowerCase()] || 'c');
+const accessLabel = v => ({vvip:'A', vip:'B', standard:'C'}[(v || 'standard').toLowerCase()] || 'C');
 const accessOf = (v, fallback = 'standard') => {
   if(v === undefined || v === '') return fallback;
   const n = String(v).trim().toLowerCase().replace(/\s+access$/, '');
@@ -259,8 +260,8 @@ async function guestView(token){
 
     ${canAdd ? `
     <h2>your guests</h2>
-    <p class="dim">adding guests is optional. you can add ${me.quota} ${me.quota === 1 ? 'guest' : 'guests'} in total. ${me.level + 1 < MAX_LEVEL && me.child_quota > 0 ? `each of them can add ${me.child_quota === 1 ? '1 guest' : me.child_quota + ' guests'}.` : `they can't add guests of their own.`} the guests you add will be ${accessLabel(me.access)}.</p>
-    ${children.length ? `<div class="list">${children.map(c => `<div class="item"><span>${esc(c.name)} <span class="dim">${esc(c.email)} · ${accessLabel(c.access)}</span></span><span>${c.status}</span></div>`).join('')}</div>` : ''}
+    <p class="dim">adding guests is optional. you can add ${me.quota} ${me.quota === 1 ? 'guest' : 'guests'} in total. ${me.level + 1 < MAX_LEVEL && me.child_quota > 0 ? `each of them can add ${me.child_quota === 1 ? '1 guest' : me.child_quota + ' guests'}.` : `they can't add guests of their own.`} the guests you add will be <span class="q">${accessLabel(me.access)}</span>.</p>
+    ${children.length ? `<div class="list">${children.map(c => `<div class="item"><span>${esc(c.name)} <span class="dim">${esc(c.email)} · <span class="q">${accessLabel(c.access)}</span></span></span><span>${c.status}</span></div>`).join('')}</div>` : ''}
     ${confirmed && remaining > 0 ? `
       <div id="rows"></div>
       <p class="dim">${remaining} left</p>
@@ -311,7 +312,7 @@ async function adminView(){
   const render = (pid, numbered) => (byParent[pid] || []).map((r, i) => `
     <li>
       <div class="node ${r.status}">
-        ${numbered ? `<span class="num">${i + 1}.</span>` : ''}<span>${esc(r.name)} <span class="dim">${accessLabel(r.access)} · ${esc(r.email)} · ${r.phone ? esc(r.phone) : 'no phone'} · ${r.status}${r.level < MAX_LEVEL ? ` · can invite ${r.quota}${r.level + 1 < MAX_LEVEL ? `, their guests can invite ${r.child_quota}` : ''}` : ''}</span></span>
+        ${numbered ? `<span class="num">${i + 1}.</span>` : ''}<span>${esc(r.name)} <span class="dim"><span class="q">${accessLabel(r.access)}</span> · ${esc(r.email)} · ${r.phone ? esc(r.phone) : 'no phone'} · ${r.status}${r.level < MAX_LEVEL ? ` · can invite ${r.quota}${r.level + 1 < MAX_LEVEL ? `, their guests can invite ${r.child_quota}` : ''}` : ''}</span></span>
         ${r.status !== 'revoked' ? `<button class="btn ghost" data-rv="${r.id}">revoke</button>` : ''}
       </div>
       ${byParent[r.id] ? `<ul>${render(r.id)}</ul>` : ''}
@@ -327,8 +328,8 @@ async function adminView(){
     <div id="flash"></div>
 
     <h2>add first wave</h2>
-    <p class="dim">one per line: name, email, how many this person can add, how many each of those guests can add, access. access is a, b or c. a is vvip, b is vip, c is standard. the people they add get the same. 0 means they can't add anyone. the first email asks them to apply. 15 minutes after they confirm their name, they get the guest list link.</p>
-    <div class="field"><textarea id="seed" rows="5" placeholder="stella, stella@gmail.com, 3, 1, a"></textarea></div>
+    <p class="dim">one per line: name, email, how many this person can add, how many each of those guests can add, access. access is <span class="q">A</span>, <span class="q">B</span> or <span class="q">C</span>. <span class="q">A</span> is vvip, <span class="q">B</span> is vip, <span class="q">C</span> is standard. the people they add get the same. 0 means they can't add anyone. the first email asks them to apply. 15 minutes after they confirm their name, they get the guest list link.</p>
+    <div class="field"><textarea id="seed" rows="5" placeholder="stella, stella@gmail.com, 3, 1, A"></textarea></div>
     <p class="right"><button class="btn" id="go">send links</button></p>
 
     <h2>guest tree</h2>
@@ -370,7 +371,7 @@ async function adminView(){
       const tier = accessOf(p[4]);
       let ok = true;
       if(quota === null || child === null){ errors.push(`line ${n}: guest numbers must be from 0 to ${CAPACITY}.`); ok = false; }
-      if(tier === null){ errors.push(`line ${n}: access must be a, b or c.`); ok = false; }
+      if(tier === null){ errors.push(`line ${n}: access must be A, B or C.`); ok = false; }
       if(seen.has(email)){ errors.push(`line ${n}: ${email} is a duplicate of line ${seen.get(email)}.`); ok = false; }
       else seen.set(email, n);
       if(existing.has(email)){ errors.push(`line ${n}: ${email} is already on the list.`); ok = false; }
