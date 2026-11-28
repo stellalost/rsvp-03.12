@@ -21,6 +21,11 @@ input[readonly]{color:var(--dim);border-color:#444}
 input:focus,textarea:focus,button:focus-visible,a:focus-visible{outline:2px solid var(--fg);outline-offset:3px}
 .field{margin:0 0 20px}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0 0 12px}
+.row.invite{grid-template-columns:1fr 1fr auto;align-items:center}
+.row.invite .btn{justify-self:start;width:auto}
+.btn.small{padding:12px 16px}
+input.bad{border-style:dashed}
+.hint{margin:8px 0 0;font-size:13px}
 .btn{background:transparent;color:var(--fg);border:1px solid var(--line);padding:14px 28px;font:inherit;font-weight:700;cursor:pointer;text-transform:lowercase}
 .btn:hover{background:var(--fg);color:var(--bg)}
 .btn[disabled]{opacity:.35;cursor:default;background:transparent;color:var(--fg)}
@@ -40,7 +45,7 @@ input:focus,textarea:focus,button:focus-visible,a:focus-visible{outline:2px soli
 .bar i{display:block;height:3px;background:var(--fg);margin-top:-1px}
 .dev{position:fixed;bottom:0;left:0;right:0;background:#111;border-top:1px solid #333;padding:8px 16px;font-size:12px;text-align:center}
 .dev a{color:var(--dim);margin:0 8px}
-@media(max-width:560px){.row{grid-template-columns:1fr}}
+@media(max-width:560px){.row,.row.invite{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:no-preference){main{animation:in .5s ease both}@keyframes in{from{opacity:0}}}
 </style>
 </head>
@@ -142,7 +147,7 @@ const mockApi = {
     if(reservedPlaces(db) > CAPACITY) throw new Error('the guest list is full.');
     for(const g of guests){
       if(db.some(d => d.email.toLowerCase() === g.email.toLowerCase() && d.status !== 'revoked'))
-        throw new Error(g.email + ' is already on the list.');
+        throw new Error('already on the list');
     }
     guests.forEach(g => db.push({id:nextId++,parent:me.id,name:g.name,email:g.email,phone:'',status:'invited',level:me.level+1,quota:me.child_quota || 0,child_quota:0,access:me.access || 'standard',child_access:me.access || 'standard',token:'t'+nextId}));
   },
@@ -252,32 +257,41 @@ async function guestView(token){
     ${children.length ? `<div class="list">${children.map(c => `<div class="item"><span>${esc(c.name)} <span class="dim">${esc(c.email)} · ${accessLabel(c.access)}</span></span><span>${c.status}</span></div>`).join('')}</div>` : ''}
     ${confirmed && remaining > 0 ? `
       <div id="rows"></div>
-      <p><button class="btn ghost" id="more">+ another guest</button> <span class="dim">${remaining} left</span></p>
-      <p class="right"><button class="btn" id="send">send invites</button></p>
+      <p class="dim">${remaining} left</p>
     ` : `<p class="dim">you have used all your guest places.</p>`}
     ` : `<h2>your guests</h2><p class="dim">guest places are not available at this level. see you there.</p>`}`;
 
   const flash = (t, err) => { $('#flash').innerHTML = notice(t, err); window.scrollTo({top:0,behavior:'smooth'}); };
 
   if($('#rows')){
-    let count = 0;
-    const addRow = () => {
-      if(count >= remaining) return;
-      count++;
-      const d = document.createElement('div'); d.className = 'row';
-      d.innerHTML = `<input aria-label="guest name" placeholder="guest name"><input aria-label="guest email" type="email" placeholder="guest email">`;
-      $('#rows').appendChild(d);
-      if(count >= remaining) $('#more').disabled = true;
+    const d = document.createElement('div');
+    d.innerHTML = `<div class="row invite"><input id="gn" aria-label="guest name" placeholder="guest name"><input id="ge" aria-label="guest email" type="email" placeholder="guest email"><button class="btn small" id="invite" type="button">invite</button></div><p class="hint" id="guest-err" hidden></p>`;
+    $('#rows').appendChild(d);
+    const showErr = (input, msg) => {
+      input.classList.add('bad');
+      const hint = $('#guest-err');
+      hint.hidden = false;
+      hint.textContent = msg;
     };
-    addRow();
-    $('#more').onclick = addRow;
-    $('#send').onclick = async () => {
-      const guests = [...$('#rows').children].map(r => ({name:r.children[0].value.trim(), email:r.children[1].value.trim()})).filter(g => g.name || g.email);
-      if(!guests.length){ flash('add at least one guest, or skip this step.', true); return; }
-      if(guests.some(g => !g.name || !/^\S+@\S+\.\S+$/.test(g.email))){ flash('each guest needs a name and a valid email.', true); return; }
-      $('#send').disabled = true;
-      try { await api.addGuests(token, guests); await guestView(token); $('#flash').innerHTML = notice('invites sent.'); }
-      catch(e){ flash(e.message, true); $('#send').disabled = false; }
+    const clearErr = () => {
+      $('#gn').classList.remove('bad');
+      $('#ge').classList.remove('bad');
+      $('#guest-err').hidden = true;
+    };
+    $('#gn').oninput = clearErr;
+    $('#ge').oninput = clearErr;
+    $('#invite').onclick = async () => {
+      clearErr();
+      const name = $('#gn').value.trim(), email = $('#ge').value.trim();
+      if(!name){ showErr($('#gn'), 'enter a name.'); return; }
+      if(!/^\S+@\S+\.\S+$/.test(email)){ showErr($('#ge'), 'enter a valid email.'); return; }
+      if(children.some(c => c.email.toLowerCase() === email.toLowerCase())){ showErr($('#ge'), 'already on the list'); return; }
+      $('#invite').disabled = true;
+      try { await api.addGuests(token, [{name, email}]); await guestView(token); }
+      catch(e){
+        showErr($('#ge'), /already on the list/i.test(e.message) ? 'already on the list' : e.message);
+        $('#invite').disabled = false;
+      }
     };
   }
 }

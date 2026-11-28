@@ -15,12 +15,12 @@ export default async function handler(req, res) {
     .update({ name, status: 'applied', applied_at: new Date().toISOString(), release_at: releaseAt })
     .eq('id', existing.id)
     .eq('status', 'invited')
-    .select('id,email,access')
+    .select('id,email,access,quota,level')
     .maybeSingle();
   if (error || !data) return res.status(409).json({ error: 'we have already received your request.' });
 
   await sendMany([{ to: data.email, name }], 'ack');
-  const emailId = await scheduleInvite({ to: data.email, name, token, access: data.access }, releaseAt);
+  const emailId = await scheduleInvite({ to: data.email, name, token, access: data.access, quota: data.quota, level: data.level }, releaseAt);
   if (!emailId) {
     await db.from('invites').update({ status: 'invited', applied_at: null, release_at: null }).eq('id', data.id).eq('status', 'applied');
     return res.status(502).json({ error: 'something went wrong. try again.' });

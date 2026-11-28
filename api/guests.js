@@ -13,7 +13,7 @@ export default async function handler(req, res) {
   const payload = clean.map((g, i) => ({ ...g, token_hash: hash(raw[i]) }));
   const { error } = await db.rpc('add_guests', { p_token_hash: hash(token), p_guests: payload });
   if (error) {
-    if (error.code === '23505') return res.status(409).json({ error: 'one of those emails is already on the list.' });
+    if (error.code === '23505') return res.status(409).json({ error: 'already on the list' });
     return res.status(400).json({ error: error.message });
   }
   await sendMany(clean.map((g, i) => ({ to: g.email, name: g.name, token: raw[i] })), 'apply');

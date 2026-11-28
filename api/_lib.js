@@ -80,7 +80,7 @@ function ackMessage({ to, name }) {
   return {
     from: process.env.MAIL_FROM,
     to,
-    subject: 'lost request',
+    subject: 'lost preview night reply',
     text: `hi ${shown}\n\nwe have received your reply for lost preview night\n\nyou will be notified shortly with next steps\n\n03.12\n\nlost`,
     html: layout([
       para(`hi ${esc(shown)}`),
@@ -92,12 +92,13 @@ function ackMessage({ to, name }) {
   };
 }
 
-function inviteMessage({ to, name, token, access }) {
+function inviteMessage({ to, name, token, access, quota, level }) {
   const link = `${process.env.SITE_URL}/#token=${token}`;
   const shown = String(name || '').toLowerCase();
   const safeName = esc(shown);
   const tier = (access || 'standard').toLowerCase();
   const letter = { vvip: 'a', vip: 'b', standard: 'c' }[tier] || 'c';
+  const canInvite = Number(level) < 3 && Number(quota) > 0;
   const confirmed = tier === 'standard'
     ? 'your place at lost preview night has been confirmed'
     : 'your place at lost preview night 03.12 has been confirmed';
@@ -113,19 +114,22 @@ function inviteMessage({ to, name, token, access }) {
     'last entry 12am',
     '',
     'we will reveal the address on 03.12 at 12pm',
+    '',
+    queue,
     ''
   ];
-  lines.push(queue, '', `add your guests\n${link}`, '', 'missed you.', '', 'see you soon.', '', 'lost', '', 'note on our preview night:', '', note);
+  if (canInvite) lines.push('add your guests', link, '');
+  lines.push('missed you.', '', 'see you soon.', '', 'lost', '', 'note on our preview night:', '', note);
   const html = [
     para(`hi ${safeName}`),
     para(confirmed),
     para('9pm - 3am'),
     para('last entry 12am'),
-    para('we will reveal the address on 03.12 at 12pm')
+    para('we will reveal the address on 03.12 at 12pm'),
+    para(queue)
   ];
+  if (canInvite) html.push(button(link, 'add your guests'));
   html.push(
-    para(queue),
-    button(link, 'add your guests'),
     para('missed you.'),
     para('see you soon.'),
     para('lost'),
