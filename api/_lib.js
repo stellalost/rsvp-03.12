@@ -9,7 +9,7 @@ export const newToken = () => crypto.randomBytes(24).toString('base64url');
 export const hash = (t) => crypto.createHash('sha256').update(t).digest('hex');
 export const bearer = (req) => (req.headers.authorization || '').replace(/^Bearer /, '').trim();
 export const emailOk = (e) => /^\S+@\S+\.\S+$/.test(e) && e.length < 255;
-export const RELEASE_MS = 60 * 1000;
+export const RELEASE_MS = 15 * 60 * 1000;
 
 export function isAdmin(req) {
   const secret = process.env.ADMIN_SECRET;
