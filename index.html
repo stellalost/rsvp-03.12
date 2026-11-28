@@ -128,7 +128,7 @@ const mockApi = {
     const me = db.find(d => d.token === token && d.status !== 'revoked');
     if(!me) throw new Error('this link is not valid or has been cancelled.');
     if(me.status !== 'invited') return;
-    Object.assign(me, {name:data.name, status: me.level >= MAX_LEVEL ? 'confirmed' : 'applied', applied_at:new Date().toISOString(), release_at:new Date(Date.now()+hours).toISOString()});
+    Object.assign(me, {name:data.name, status:'confirmed', applied_at:new Date().toISOString(), release_at:new Date(Date.now()+hours).toISOString()});
   },
   // POST /api/confirm  {token, name, phone}
   async confirm(token, data){
